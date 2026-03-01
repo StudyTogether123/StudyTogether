@@ -6,9 +6,17 @@ import {
     toggleLock
 } from "../services/post.service.js";
 
+function renderStatus(container, message) {
+    container.innerHTML = `
+        <div class="status-card info">
+            <div class="status-icon">📄</div>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
 export async function loadPosts() {
 
-    // Ẩn section khác
     document.querySelectorAll(".content-section")
         .forEach(sec => sec.classList.add("hidden-section"));
 
@@ -26,52 +34,93 @@ export async function loadPosts() {
 
     section.innerHTML = `
         <div class="container">
-            <h2>Quản lý Posts</h2>
-            <button id="createBtn">+ Tạo bài</button>
-            <div id="postTable">Đang tải...</div>
+            <h2 class="section-title">Quản lý Posts</h2>
+            <button id="createBtn" class="primary-btn">+ Tạo bài</button>
+            <div id="postTable"></div>
         </div>
     `;
 
+    const tableContainer = document.getElementById("postTable");
+
+    renderStatus(tableContainer, "Đang tải dữ liệu...");
+
     try {
+
         const posts = await getAllPosts();
 
-        document.getElementById("postTable").innerHTML = `
-            <table>
-                <tr>
-                    <th>ID</th>
-                    <th>Tiêu đề</th>
-                    <th>Danh mục</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                </tr>
-                ${posts.map(p => `
+        if (!posts || posts.length === 0) {
+            renderStatus(tableContainer, "Chưa có bài viết nào.");
+            return;
+        }
+
+        tableContainer.innerHTML = `
+            <table class="admin-table">
+                <thead>
                     <tr>
-                        <td>${p.id}</td>
-                        <td>${p.title}</td>
-                        <td>${p.category}</td>
-                        <td>${p.locked ? "🔒 Locked" : "✅ Active"}</td>
-                        <td>
-                            <button onclick="editPost(${p.id})">Sửa</button>
-                            <button onclick="removePost(${p.id})">Xóa</button>
-                            <button onclick="lockPost(${p.id})">
-                                ${p.locked ? "Mở khóa" : "Khóa"}
-                            </button>
-                        </td>
+                        <th>ID</th>
+                        <th>Tiêu đề</th>
+                        <th>Danh mục</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
                     </tr>
-                `).join("")}
+                </thead>
+                <tbody>
+                    ${posts.map(p => `
+                        <tr>
+                            <td>${p.id}</td>
+                            <td>${p.title}</td>
+                            <td>${p.category ?? "-"}</td>
+                            <td>
+                                <span class="${p.locked ? "badge-locked" : "badge-active"}">
+                                    ${p.locked ? "🔒 Locked" : "✅ Active"}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="edit-btn" data-id="${p.id}">Sửa</button>
+                                <button class="delete-btn" data-id="${p.id}">Xóa</button>
+                                <button class="lock-btn" data-id="${p.id}">
+                                    ${p.locked ? "Mở khóa" : "Khóa"}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join("")}
+                </tbody>
             </table>
         `;
+
+        // ================= EVENTS =================
 
         document.getElementById("createBtn")
             .addEventListener("click", showCreateForm);
 
+        document.querySelectorAll(".delete-btn")
+            .forEach(btn =>
+                btn.addEventListener("click", () =>
+                    handleDelete(btn.dataset.id)
+                )
+            );
+
+        document.querySelectorAll(".lock-btn")
+            .forEach(btn =>
+                btn.addEventListener("click", () =>
+                    handleLock(btn.dataset.id)
+                )
+            );
+
+        document.querySelectorAll(".edit-btn")
+            .forEach(btn =>
+                btn.addEventListener("click", () =>
+                    handleEdit(btn.dataset.id)
+                )
+            );
+
     } catch (err) {
-        section.innerHTML += `<p style="color:red;">Lỗi tải dữ liệu</p>`;
+        renderStatus(tableContainer, "Không thể tải dữ liệu. Vui lòng thử lại.");
     }
 }
 
-// ================= CREATE FORM =================
-function showCreateForm() {
+// ================= CREATE =================
+async function showCreateForm() {
 
     const title = prompt("Tiêu đề:");
     const content = prompt("Nội dung:");
@@ -79,26 +128,30 @@ function showCreateForm() {
 
     if (!title || !content) return;
 
-    createPost({ title, content, category })
-        .then(loadPosts);
+    try {
+        await createPost({ title, content, category });
+        loadPosts();
+    } catch {
+        alert("Không thể tạo bài.");
+    }
 }
 
 // ================= DELETE =================
-window.removePost = async function(id) {
-    if (confirm("Xóa bài này?")) {
-        await deletePost(id);
-        loadPosts();
-    }
-};
+async function handleDelete(id) {
+    if (!confirm("Bạn chắc chắn muốn xóa?")) return;
+
+    await deletePost(id);
+    loadPosts();
+}
 
 // ================= LOCK =================
-window.lockPost = async function(id) {
+async function handleLock(id) {
     await toggleLock(id);
     loadPosts();
-};
+}
 
 // ================= EDIT =================
-window.editPost = async function(id) {
+async function handleEdit(id) {
 
     const title = prompt("Tiêu đề mới:");
     const content = prompt("Nội dung mới:");
@@ -108,4 +161,4 @@ window.editPost = async function(id) {
 
     await updatePost(id, { title, content, category });
     loadPosts();
-};
+}
