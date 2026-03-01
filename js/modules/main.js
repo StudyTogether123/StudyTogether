@@ -564,7 +564,7 @@ function updateStats() {
         quizCompletedToday.textContent = '42';
     }
     
-    // Sự kiện sắp diễn ra
+    // Sự kiện Đã diễn ra
     const upcomingEvents = document.getElementById('upcomingEvents');
     if (upcomingEvents) {
         upcomingEvents.textContent = '8';

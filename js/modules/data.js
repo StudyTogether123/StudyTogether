@@ -1021,62 +1021,62 @@ export const sampleData = {
         {
             id: 1,
             title: "Ngày hội tuyển sinh FPT Open Day 2025",
-            date: "28/10/2023",
+            date: "28/10/2025",
             time: "8:00 - 17:00",
             location: "Sân trường FPT University, Đà Nẵng",
             description: "Tham gia ngày hội tuyển sinh để trải nghiệm môi trường học tập tại FPT.",
             participants: 150,
-            status: "sắp diễn ra"
+            status: "Đã diễn ra"
         },
         {
             id: 2,
             title: "Workshop: Kỹ năng lập trình cho người mới bắt đầu",
-            date: "25/10/2023",
+            date: "25/10/2025",
             time: "14:00 - 16:30",
             location: "Phòng lab 301",
             description: "Workshop dành cho tân sinh viên ngành CNTT.",
             participants: 80,
-            status: "sắp diễn ra"
+            status: "Đã diễn ra"
         },
         {
             id: 3,
             title: "Talkshow: Hành trình khởi nghiệp",
-            date: "20/10/2023",
+            date: "20/10/2025",
             time: "18:30 - 20:30",
             location: "Hội trường lớn",
             description: "Giao lưu với cựu sinh viên thành đạt.",
             participants: 200,
-            status: "đã diễn ra"
+            status: "Đã diễn ra"
         },
         {
             id: 4,
             title: "Cuộc thi FPT Hackathon 2025",
-            date: "15-17/11/2023",
+            date: "15-17/11/2025",
             time: "Toàn ngày",
             location: "FPT City",
             description: "Thử thách lập trình 48 giờ.",
             participants: 300,
-            status: "sắp diễn ra"
+            status: "Đã diễn ra"
         },
         {
             id: 5,
             title: "Giải bóng đá sinh viên FPT",
-            date: "05/11/2023",
+            date: "05/11/2025",
             time: "16:00",
             location: "Sân bóng FPT",
             description: "Giải đấu giao lưu giữa các khoa.",
             participants: 120,
-            status: "sắp diễn ra"
+            status: "Đã diễn ra"
         },
         {
             id: 6,
             title: "Workshop: UI/UX Design cơ bản",
-            date: "12/11/2023",
+            date: "12/11/2025",
             time: "14:00",
             location: "Innovation Space",
             description: "Học thiết kế trải nghiệm người dùng.",
             participants: 95,
-            status: "sắp diễn ra"
+            status: "Đã diễn ra"
         }
     ],
 
@@ -1390,8 +1390,8 @@ export const sampleData = {
     },
 
     quizHistory: [
-        { date: "25/10/2023", topic: "Kỹ năng học tập", score: "8/10", points: 80 },
-        { date: "24/10/2023", topic: "Quản lý thời gian", score: "7/10", points: 70 }
+        { date: "25/10/2025", topic: "Kỹ năng học tập", score: "8/10", points: 80 },
+        { date: "24/10/2025", topic: "Quản lý thời gian", score: "7/10", points: 70 }
     ]
 };
 

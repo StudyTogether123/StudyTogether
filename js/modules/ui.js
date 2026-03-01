@@ -93,7 +93,7 @@ function enableContentCardClick(container) {
 =====================================================*/
 export function createActivityCard(activity) {
 
-    const isUpcoming = activity.status === 'sắp diễn ra';
+    const isUpcoming = activity.status === 'Đã diễn ra';
 
     return `
         <div class="activity-card">
@@ -124,7 +124,7 @@ export function createActivityCard(activity) {
                     class="btn ${isUpcoming ? 'btn-primary' : 'btn-outline'}"
                     data-id="${activity.id}"
                 >
-                    ${isUpcoming ? 'Sắp diễn ra' : 'Đã diễn ra'}
+                    ${isUpcoming ? 'Đã diễn ra' : 'Đã diễn ra'}
                 </button>
             </div>
         </div>
