@@ -97,7 +97,7 @@ function injectAdminButton() {
 
     const adminLink = document.createElement("a");
 
-    adminLink.href = "app-v2/admin.html";
+    adminLink.href = "./admin.html";
     adminLink.id = "adminPanelBtn";
     adminLink.innerHTML = `
         <i class="fas fa-shield-alt"></i>
