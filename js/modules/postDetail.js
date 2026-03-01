@@ -1,7 +1,16 @@
 import { sampleData } from './data.js';
-import { renderQuizQuestions, showQuizResult, updateStatsAfterQuiz, resetQuizAnswers } from './quiz.js';
+import { 
+    renderQuizQuestions, 
+    showQuizResult, 
+    updateStatsAfterQuiz, 
+    resetQuizAnswers 
+} from './quiz.js';
 
+/* ===============================
+   LOAD POST DETAIL
+=================================*/
 export function loadPostDetail(id) {
+
     const post = sampleData.knowledgeContent.find(
         item => String(item.id) === String(id)
     );
@@ -11,104 +20,113 @@ export function loadPostDetail(id) {
         return;
     }
 
-    // Hide all sections
     hideAllSections();
-    
-    // Show post detail section
+
     const detailSection = document.getElementById('post-detail-section');
-    if (!detailSection) {
-        console.error('Post detail section not found');
-        return;
-    }
+    if (!detailSection) return;
+
     detailSection.classList.remove('hidden-section');
 
-    // Clear old content
-    const container = document.getElementById('post-detail-content');
-    if (container) {
-        container.innerHTML = ''; // Clear trước khi render mới
-    }
-
-    // Render post content
     renderPostContent(post);
 }
 
-function hideAllSections() {
-    document.querySelectorAll('.content-section').forEach(section => {
-        section.classList.add('hidden-section');
-    });
-}
 
+/* ===============================
+   RENDER POST CONTENT
+=================================*/
 function renderPostContent(post) {
+
     const container = document.getElementById('post-detail-content');
-    if (!container) {
-        console.error('Post detail container not found');
-        return;
-    }
-    
-    // Kiểm tra nếu là quiz
-    const isQuiz = post.type === 'quiz' || post.title?.toLowerCase().includes('quiz');
-    
+    if (!container) return;
+
+    const isQuiz = post.type === 'quiz';
+
+    const readingTime = calculateReadingTime(post.description);
+
     let contentHtml = '';
+
     if (isQuiz) {
+
         contentHtml = `
-            <div class="quiz-section">
+            <div class="medium-quiz-wrapper">
+
+                <div class="quiz-intro">
+                    <h3>🧠 Thử sức với bài Quiz</h3>
+                    <p>Kiểm tra kiến thức của bạn sau khi đọc bài viết.</p>
+                </div>
+
                 <div id="quizQuestions" class="quiz-questions"></div>
-                <div id="quizResult" class="quiz-result" style="display: none;"></div>
-                
+
+                <div id="quizResult" class="quiz-result hidden"></div>
+
                 <div class="quiz-actions">
-                    <button class="btn btn-primary" id="submitQuizBtn" style="display: none;">
-                        Nộp bài
+                    <button class="btn-primary" id="submitQuizBtn">
+                        🚀 Nộp bài
                     </button>
                 </div>
             </div>
         `;
+
     } else {
+
         contentHtml = `
-            <div class="post-content">
-                <p>${escapeHtml(post.description || '')}</p>
+            <div class="medium-content">
+                ${formatPostContent(post.description)}
             </div>
         `;
     }
-    
+
     container.innerHTML = `
-        <article class="post-detail">
-            <h2 class="section-title">${escapeHtml(post.title || '')}</h2>
+        <article class="medium-article">
 
-            <div class="post-meta">
-                <span class="post-date">${escapeHtml(post.date || '')}</span>
-                ${post.category ? `
-                    <span class="post-category">${escapeHtml(post.category)}</span>
-                ` : ''}
-            </div>
+            <!-- Header -->
+            <header class="medium-header">
 
+                <div class="medium-category">
+                    ${escapeHtml(post.category || 'General')}
+                </div>
+
+                <h1 class="medium-title">
+                    ${escapeHtml(post.title)}
+                </h1>
+
+                <div class="medium-meta">
+                    <span>${escapeHtml(post.date || '')}</span>
+                    <span>•</span>
+                    <span>${readingTime} phút đọc</span>
+                </div>
+
+            </header>
+
+            <!-- Cover Image -->
             ${post.image ? `
-                <div class="post-image-wrapper">
-                    <img src="${escapeHtml(post.image)}" 
-                         alt="${escapeHtml(post.title)}" 
-                         class="post-detail-image"
-                         loading="lazy">
+                <div class="medium-cover">
+                    <img 
+                        src="${escapeHtml(post.image)}"
+                        alt="${escapeHtml(post.title)}"
+                        loading="lazy"
+                    />
                 </div>
             ` : ''}
 
+            <!-- Body -->
             ${contentHtml}
 
-            <div class="post-actions">
-                <button class="btn btn-outline" id="backToKnowledgeBtn">
-                    <span aria-hidden="true">←</span> Quay lại Kiến thức
+            <!-- Footer -->
+            <footer class="medium-footer">
+                <button class="btn-outline" id="backToKnowledgeBtn">
+                    ← Quay lại
                 </button>
-            </div>
+            </footer>
+
         </article>
     `;
 
-    // Setup buttons
     setupBackButton();
-    
-    // Nếu là quiz, render câu hỏi
+
     if (isQuiz) {
-        // Reset quiz answers
         resetQuizAnswers();
-        
-        // Render quiz questions
+
         setTimeout(() => {
             renderQuizQuestions();
             setupQuizSubmitButton();
@@ -116,65 +134,111 @@ function renderPostContent(post) {
     }
 }
 
+
+/* ===============================
+   FORMAT BLOG CONTENT
+=================================*/
+function formatPostContent(text = '') {
+
+    // Chia đoạn theo xuống dòng
+    const paragraphs = text.split('\n');
+
+    return paragraphs.map(p => {
+
+        if (p.startsWith('## ')) {
+            return `<h2 class="medium-subtitle">${escapeHtml(p.replace('## ', ''))}</h2>`;
+        }
+
+        if (p.startsWith('> ')) {
+            return `<blockquote class="medium-quote">${escapeHtml(p.replace('> ', ''))}</blockquote>`;
+        }
+
+        if (p.startsWith('- ')) {
+            return `<li>${escapeHtml(p.replace('- ', ''))}</li>`;
+        }
+
+        return `<p>${escapeHtml(p)}</p>`;
+
+    }).join('');
+}
+
+
+/* ===============================
+   BUTTON HANDLERS
+=================================*/
 function setupBackButton() {
+
     const backButton = document.getElementById('backToKnowledgeBtn');
     if (!backButton) return;
-    
-    // Remove old listener
-    const newBackButton = backButton.cloneNode(true);
-    backButton.parentNode.replaceChild(newBackButton, backButton);
-    
-    newBackButton.addEventListener('click', function(e) {
+
+    const newBtn = backButton.cloneNode(true);
+    backButton.parentNode.replaceChild(newBtn, backButton);
+
+    newBtn.addEventListener('click', function(e) {
         e.preventDefault();
         closePostDetail();
     });
 }
 
+
 function setupQuizSubmitButton() {
+
     const submitBtn = document.getElementById('submitQuizBtn');
     if (!submitBtn) return;
-    
-    // Remove old listener
-    const newSubmitBtn = submitBtn.cloneNode(true);
-    submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
-    
-    newSubmitBtn.addEventListener('click', function() {
-        // Show result
+
+    const newBtn = submitBtn.cloneNode(true);
+    submitBtn.parentNode.replaceChild(newBtn, submitBtn);
+
+    newBtn.addEventListener('click', function() {
+
         const result = showQuizResult();
-        
-        // Update stats
         updateStatsAfterQuiz(result);
-        
-        // Hide submit button
+
         this.style.display = 'none';
+
+        const resultDiv = document.getElementById('quizResult');
+        if (resultDiv) resultDiv.classList.remove('hidden');
+
     });
 }
 
+
+/* ===============================
+   CLOSE DETAIL
+=================================*/
 function closePostDetail() {
-    console.log('Closing post detail...');
-    
+
     const detailSection = document.getElementById('post-detail-section');
     const knowledgeSection = document.getElementById('knowledge-section');
-    
-    if (detailSection) {
-        detailSection.classList.add('hidden-section');
-    }
-    
-    if (knowledgeSection) {
-        knowledgeSection.classList.remove('hidden-section');
-        
-        // Scroll to top
-        setTimeout(() => {
-            knowledgeSection.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-            });
-        }, 100);
-    }
-    
-    // Reset quiz answers
+
+    if (detailSection) detailSection.classList.add('hidden-section');
+    if (knowledgeSection) knowledgeSection.classList.remove('hidden-section');
+
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+
     resetQuizAnswers();
 }
+
+
+/* ===============================
+   HELPERS
+=================================*/
+function hideAllSections() {
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.add('hidden-section');
+    });
+}
+
+
+function calculateReadingTime(text = '') {
+    const wordsPerMinute = 200;
+    const wordCount = text.split(' ').length;
+    return Math.max(1, Math.ceil(wordCount / wordsPerMinute));
+}
+
 
 function escapeHtml(unsafe) {
     if (!unsafe) return '';

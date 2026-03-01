@@ -1,40 +1,65 @@
 import { sampleData } from './data.js';
+import { loadPostDetail } from './postDetail.js';
 
-/* ===============================
-   TẠO CARD NỘI DUNG
-=================================*/
-export function createContentCard(content) {
-    const icon =
-        content.type === 'video'
-            ? 'fa-play-circle'
-            : content.type === 'quiz'
-            ? 'fa-question-circle'
-            : 'fa-file-alt';
+/* =====================================================
+   UTIL RENDER
+=====================================================*/
+function renderList(containerId, data, templateFn, afterRender) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = data.map(templateFn).join('');
+
+    if (afterRender) afterRender(container);
+}
+
+/* =====================================================
+   CONTENT CARD (FEATURE + KNOWLEDGE)
+=====================================================*/
+export function createContentCard(content, isKnowledge = false) {
+
+    const iconMap = {
+        video: 'fa-play-circle',
+        quiz: 'fa-question-circle',
+        article: 'fa-file-alt'
+    };
+
+    const icon = iconMap[content.type] || 'fa-file-alt';
+
+    const shortDesc =
+        isKnowledge && content.description?.length > 120
+            ? content.description.substring(0, 120) + '...'
+            : content.description;
 
     return `
         <div class="feature-card" data-id="${content.id}">
             <div class="feature-image">
-                <img src="${content.image}" alt="${content.title}">
+                <img src="${content.image}" alt="${content.title}" loading="lazy">
             </div>
+
             <div class="feature-content">
-                <h3>${content.title}</h3>
-                <p>${content.description}</p>
+                <h3 class="card-title">${content.title}</h3>
+                <p class="card-desc">${shortDesc || ''}</p>
+
                 <div class="meta">
                     <span><i class="far ${icon}"></i> ${content.readTime}</span>
                     <span><i class="far fa-calendar"></i> ${content.date}</span>
-                    ${content.category 
-                        ? `<span><i class="fas fa-tag"></i> ${content.category}</span>` 
-                        : ''}
+                    ${
+                        content.category
+                            ? `<span><i class="fas fa-tag"></i> ${content.category}</span>`
+                            : ''
+                    }
                 </div>
             </div>
         </div>
     `;
 }
 
-/* ===============================
-   TẠO CARD HOẠT ĐỘNG
-=================================*/
+/* =====================================================
+   ACTIVITY CARD
+=====================================================*/
 export function createActivityCard(activity) {
+
     const isUpcoming = activity.status === 'sắp diễn ra';
 
     return `
@@ -61,26 +86,23 @@ export function createActivityCard(activity) {
                 </div>
             </div>
 
-            <div style="padding: 0 25px 25px;">
-                <button class="btn ${isUpcoming ? 'btn-primary' : 'btn-outline'} register-activity"
-                        data-id="${activity.id}">
+            <div class="activity-actions">
+                <button 
+                    class="btn ${isUpcoming ? 'btn-primary' : 'btn-outline'}"
+                    data-id="${activity.id}"
+                >
                     ${isUpcoming ? 'Sắp diễn ra' : 'Đã diễn ra'}
                 </button>
-
-                ${
-                    isUpcoming
-                        ? '<button class="btn btn-outline" style="margin-left:10px;">Chi tiết</button>'
-                        : ''
-                }
             </div>
         </div>
     `;
 }
 
-/* ===============================
-   TẠO BÀI VIẾT DIỄN ĐÀN
-=================================*/
+/* =====================================================
+   FORUM POST
+=====================================================*/
 export function createForumPost(post) {
+
     const categoryIcons = {
         study: 'fa-book',
         activity: 'fa-calendar-alt',
@@ -102,7 +124,7 @@ export function createForumPost(post) {
             <div class="post-header">
                 <div>
                     <span class="post-author">${post.author}</span>
-                    <span style="margin: 0 10px;">•</span>
+                    <span class="dot">•</span>
                     <span>
                         <i class="fas ${categoryIcons[post.category]}"></i>
                         ${categoryLabels[post.category]}
@@ -112,7 +134,7 @@ export function createForumPost(post) {
             </div>
 
             <div class="post-content">
-                <h4 style="margin-bottom:10px;">${post.title}</h4>
+                <h4>${post.title}</h4>
                 <p>${post.content}</p>
             </div>
 
@@ -134,46 +156,69 @@ export function createForumPost(post) {
     `;
 }
 
-/* ===============================
-   RENDER CÁC PHẦN
-=================================*/
+/* =====================================================
+   RENDER FUNCTIONS
+=====================================================*/
 export function renderFeaturedContent() {
-    const container = document.getElementById('featured-content');
-    if (!container) return;
-
-    container.innerHTML = sampleData.featuredContent
-        .map(createContentCard)
-        .join('');
+    renderList(
+        'featured-content',
+        sampleData.featuredContent,
+        item => createContentCard(item),
+        enableContentCardClick
+    );
 }
 
 export function renderKnowledgeContent() {
-    const container = document.getElementById('knowledge-content');
-    if (!container) return;
-
-    container.innerHTML = sampleData.knowledgeContent
-        .map(createContentCard)
-        .join('');
+    renderList(
+        'knowledge-content',
+        sampleData.knowledgeContent,
+        item => createContentCard(item, true),
+        enableContentCardClick
+    );
 }
 
 export function renderActivities() {
-    const container = document.getElementById('activities-content');
-    if (!container) return;
-
-    container.innerHTML = sampleData.activitiesContent
-        .map(createActivityCard)
-        .join('');
+    renderList(
+        'activities-content',
+        sampleData.activitiesContent,
+        createActivityCard
+    );
 }
 
 export function renderForumPosts() {
-    const container = document.getElementById('forum-posts-content');
-    if (!container) return;
-
-    container.innerHTML = sampleData.forumPosts
-        .map(createForumPost)
-        .join('');
+    renderList(
+        'forum-posts-content',
+        sampleData.forumPosts,
+        createForumPost
+    );
 }
 
+/* =====================================================
+   CLICK EVENT – MƯỢT, KHÔNG DUPLICATE
+=====================================================*/
+function enableContentCardClick(container) {
+
+    container.addEventListener('click', e => {
+
+        const card = e.target.closest('.feature-card');
+        if (!card) return;
+
+        const id = card.dataset.id;
+        if (!id) return;
+
+        // Animation click nhẹ
+        card.classList.add('card-clicked');
+        setTimeout(() => card.classList.remove('card-clicked'), 150);
+
+        loadPostDetail(id);
+    });
+}
+
+/* =====================================================
+   RANKING
+=====================================================*/
 export function renderRankings(type = 'weekly') {
+
     const container = document.getElementById('ranking-content');
     if (!container) return;
 
@@ -186,39 +231,41 @@ export function renderRankings(type = 'weekly') {
         <table class="ranking-table">
             <thead>
                 <tr>
-                    <th class="rank">Hạng</th>
+                    <th>Hạng</th>
                     <th>Tên sinh viên</th>
                     <th>Khoa</th>
                     <th>Điểm</th>
                 </tr>
             </thead>
             <tbody>
-                ${rankings
-                    .map(
-                        item => `
-                        <tr>
-                            <td class="rank rank-${item.rank}">
-                                ${item.rank}
-                            </td>
-                            <td>${item.name}</td>
-                            <td>${item.faculty}</td>
-                            <td>${item.points.toLocaleString()}</td>
-                        </tr>
-                    `
-                    )
-                    .join('')}
+                ${rankings.map(item => `
+                    <tr>
+                        <td class="rank rank-${item.rank}">
+                            ${item.rank}
+                        </td>
+                        <td>${item.name}</td>
+                        <td>${item.faculty}</td>
+                        <td>${item.points.toLocaleString()}</td>
+                    </tr>
+                `).join('')}
             </tbody>
         </table>
     `;
 }
 
+/* =====================================================
+   QUIZ HISTORY
+=====================================================*/
 export function renderQuizHistory() {
+
     const container = document.getElementById('quiz-history');
     if (!container) return;
 
-    if (sampleData.quizHistory.length === 0) {
+    if (!sampleData.quizHistory.length) {
         container.innerHTML =
-            '<p style="text-align:center;padding:40px;background:white;border-radius:8px;">Bạn chưa tham gia quiz nào. Hãy bắt đầu ngay!</p>';
+            `<p class="empty-state">
+                Bạn chưa tham gia quiz nào. Hãy bắt đầu ngay!
+            </p>`;
         return;
     }
 
@@ -233,41 +280,40 @@ export function renderQuizHistory() {
                 </tr>
             </thead>
             <tbody>
-                ${sampleData.quizHistory
-                    .map(
-                        item => `
-                        <tr>
-                            <td>${item.date}</td>
-                            <td>${item.topic}</td>
-                            <td>${item.score}</td>
-                            <td>${item.points}</td>
-                        </tr>
-                    `
-                    )
-                    .join('')}
+                ${sampleData.quizHistory.map(item => `
+                    <tr>
+                        <td>${item.date}</td>
+                        <td>${item.topic}</td>
+                        <td>${item.score}</td>
+                        <td>${item.points}</td>
+                    </tr>
+                `).join('')}
             </tbody>
         </table>
     `;
 }
 
-/* ===============================
-   ANIMATE COUNTER
-=================================*/
+/* =====================================================
+   COUNTER ANIMATION – MƯỢT HƠN
+=====================================================*/
 export function animateCounter(elementId, targetValue, duration = 2000) {
+
     const element = document.getElementById(elementId);
     if (!element) return;
 
-    let start = 0;
-    const increment = targetValue / (duration / 16);
+    const startTime = performance.now();
 
-    const timer = setInterval(() => {
-        start += increment;
+    function update(currentTime) {
 
-        if (start >= targetValue) {
-            start = targetValue;
-            clearInterval(timer);
+        const progress = Math.min((currentTime - startTime) / duration, 1);
+        const value = Math.floor(progress * targetValue);
+
+        element.textContent = value.toLocaleString();
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
         }
+    }
 
-        element.textContent = Math.floor(start);
-    }, 16);
+    requestAnimationFrame(update);
 }

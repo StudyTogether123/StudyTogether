@@ -23,12 +23,10 @@ const storage = getStorage();
 function getBasePath() {
     const { pathname } = window.location;
 
-    // Nếu đang ở /StudyTogether/... trên GitHub
     if (pathname.includes("/StudyTogether/")) {
         return "/StudyTogether/";
     }
 
-    // Local
     return "/";
 }
 
@@ -100,31 +98,37 @@ export async function handleAuth(event) {
         /* ================= LOGIN ================= */
         if (appState.isLoginMode) {
 
-            let token = null;
+            let responseData;
 
             try {
-                token = await login(username, password);
-            } catch (e) {
-                console.warn("API login failed → Demo mode");
+                responseData = await login(username, password);
+            } catch (error) {
+                console.error("Login API error:", error);
+                return toastr.error("Đăng nhập thất bại!");
             }
 
-            if (!token) {
-                token = "demo-token-" + Date.now();
+            if (!responseData || !responseData.token) {
+                return toastr.error("Sai tài khoản hoặc mật khẩu!");
             }
 
-            const role = username.toLowerCase() === "admin" ? "admin" : "user";
+            // Lấy dữ liệu từ backend
+            const { token, role, username: apiUsername } = responseData;
 
+            // Lưu đúng token (STRING)
             storage.setItem("token", token);
-            storage.setItem("username", username);
+            storage.setItem("username", apiUsername);
             storage.setItem("role", role);
 
-            appState.currentUser = { name: username, role };
+            appState.currentUser = {
+                name: apiUsername,
+                role: role
+            };
 
             toastr.success("Đăng nhập thành công!");
             closeAuthModal();
 
             setTimeout(() => {
-                if (role === "admin") {
+                if (role === "ROLE_ADMIN") {
                     redirect("app-v2/admin.html");
                 } else {
                     redirect("index.html");
@@ -147,13 +151,14 @@ export async function handleAuth(event) {
                 toastr.success("Đăng ký thành công! Hãy đăng nhập.");
                 closeAuthModal();
                 setTimeout(() => openAuthModal(true), 300);
-            } catch {
+            } catch (error) {
+                console.error("Register error:", error);
                 toastr.error("Đăng ký thất bại!");
             }
         }
 
     } catch (error) {
-        console.error(error);
+        console.error("Auth error:", error);
         toastr.error("Có lỗi xảy ra!");
     }
 }
