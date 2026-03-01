@@ -18,6 +18,29 @@ function getStorage() {
 const storage = getStorage();
 
 /* ===============================
+   BASE PATH (GitHub Safe)
+================================= */
+function getBasePath() {
+    const { pathname } = window.location;
+
+    // Nếu đang ở /StudyTogether/... trên GitHub
+    if (pathname.includes("/StudyTogether/")) {
+        return "/StudyTogether/";
+    }
+
+    // Local
+    return "/";
+}
+
+/* ===============================
+   SAFE REDIRECT
+================================= */
+function redirect(path) {
+    const base = getBasePath();
+    window.location.href = base + path;
+}
+
+/* ===============================
    OPEN MODAL
 ================================= */
 export function openAuthModal(isLogin = true) {
@@ -73,6 +96,7 @@ export async function handleAuth(event) {
     }
 
     try {
+
         /* ================= LOGIN ================= */
         if (appState.isLoginMode) {
 
@@ -84,12 +108,10 @@ export async function handleAuth(event) {
                 console.warn("API login failed → Demo mode");
             }
 
-            // Demo fallback
             if (!token) {
                 token = "demo-token-" + Date.now();
             }
 
-            // ⚠ Chỉ set role sau khi có token
             const role = username.toLowerCase() === "admin" ? "admin" : "user";
 
             storage.setItem("token", token);
@@ -103,9 +125,9 @@ export async function handleAuth(event) {
 
             setTimeout(() => {
                 if (role === "admin") {
-                    window.location.href = "/app-v2/admin.html";
+                    redirect("app-v2/admin.html");
                 } else {
-                    window.location.href = "/";
+                    redirect("index.html");
                 }
             }, 500);
         }
@@ -137,7 +159,7 @@ export async function handleAuth(event) {
 }
 
 /* ===============================
-   AUTH CHECK (AN TOÀN)
+   AUTH CHECK
 ================================= */
 export function isAuthenticated() {
     const token = storage.getItem("token");
@@ -169,6 +191,6 @@ export function logout() {
     toastr.success("Đăng xuất thành công!");
 
     setTimeout(() => {
-        window.location.href = "/";
+        redirect("index.html");
     }, 500);
 }
