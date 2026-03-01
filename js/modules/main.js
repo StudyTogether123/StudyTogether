@@ -570,28 +570,33 @@ function updateStats() {
         upcomingEvents.textContent = '8';
     }
     
-    // Phần trăm tiến độ
-    const percentage = 42;
+    // Hiển thị tổng số câu hỏi (20 câu)
+    const totalQuestions = 20;    // Tổng số câu hỏi
     
     const quizPercentage = document.getElementById('quizPercentage');
     if (quizPercentage) {
-        quizPercentage.textContent = percentage + '%';
+        quizPercentage.textContent = totalQuestions + ' câu hỏi';
     }
     
     const quizPercentage2 = document.getElementById('quizPercentage2');
     if (quizPercentage2) {
-        quizPercentage2.textContent = percentage + '%';
+        quizPercentage2.textContent = totalQuestions + ' câu';
     }
     
+    // Ẩn thanh tiến độ nếu muốn
     const quizProgressBar = document.getElementById('quizProgressBar');
     if (quizProgressBar) {
-        quizProgressBar.style.width = percentage + '%';
+        quizProgressBar.style.display = 'none';
     }
     
     const quizProgressBar2 = document.getElementById('quizProgressBar2');
     if (quizProgressBar2) {
-        quizProgressBar2.style.width = percentage + '%';
+        quizProgressBar2.style.display = 'none';
     }
+    
+    // Hoặc giữ nguyên width nhưng không cần thiết
+    // const percentage = (completedQuestions / totalQuestions) * 100;
+    // quizProgressBar.style.width = percentage + '%';
 }
 
 // =============================

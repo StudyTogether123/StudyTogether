@@ -1152,25 +1152,227 @@ export const sampleData = {
     dailyQuiz: {
         title: "Quiz hôm nay: Kiến thức về FPT University",
         questions: [
-            {
-                id: 1,
-                question: "Đại học FPT Đà Nẵng được thành lập vào năm nào?",
-                options: ["2006", "2008", "2010", "2012"],
-                correctAnswer: 1
-            },
-            {
-                id: 2,
-                question: "Màu sắc chính thức của Đại học FPT là gì?",
-                options: ["Xanh lá và Cam", "Xanh dương và Trắng", "Đỏ và Vàng", "Tím và Xanh"],
-                correctAnswer: 0
-            },
-            {
-                id: 3,
-                question: "Chuẩn đầu ra tiếng Anh bắt buộc là gì?",
-                options: ["TOEIC 600", "IELTS 6.0", "TOEFL 500", "Không có chuẩn"],
-                correctAnswer: 1
-            }
-        ]
+    {
+        id: 1,
+        question: "Theo Harvard Business Review, những người hiệu suất cao thường làm gì để quản lý thời gian hiệu quả?",
+        options: [
+            "Làm thật nhiều việc cùng một lúc",
+            "Tập trung vào những nhiệm vụ tạo giá trị lớn nhất",
+            "Kéo dài thời gian làm việc lên 12 tiếng/ngày",
+            "Ưu tiên việc khẩn cấp trước"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 2,
+        question: "Theo Program on Negotiation at Harvard, đàm phán hiệu quả dựa trên việc hiểu điều gì?",
+        options: [
+            "Vị trí (position) của đối phương",
+            "Lợi ích cốt lõi (interest) thay vì yêu cầu bề mặt",
+            "Điểm yếu của đối phương",
+            "Ngân sách tối đa có thể chi"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 3,
+        question: "Theo khái niệm từ Harvard, BATNA là viết tắt của khái niệm gì trong đàm phán?",
+        options: [
+            "Best Alternative To a Negotiated Agreement",
+            "Basic Approach To Negotiation Analysis",
+            "Business And Trade Negotiation Association",
+            "Balanced Argument Through Neutral Assessment"
+        ],
+        correctAnswer: 0
+    },
+    {
+        id: 4,
+        question: "Theo nghiên cứu từ Deloitte, nhóm kỹ năng nào được đánh giá cao hơn cả kỹ năng lập trình?",
+        options: [
+            "Kỹ năng ngoại ngữ",
+            "Làm việc nhóm và giao tiếp",
+            "Kỹ năng toán học",
+            "Kỹ năng quản lý tài chính"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 5,
+        question: "Theo bài viết về người lao động Việt Nam, ba nhóm kỹ năng then chốt cho tương lai là gì?",
+        options: [
+            "Lập trình, thiết kế, marketing",
+            "Giao tiếp, nghiên cứu và tư duy phản biện, làm việc nhóm",
+            "Ngoại ngữ, tin học, tài chính",
+            "Quản lý, lãnh đạo, điều hành"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 6,
+        question: "Theo Harvard Business Review, sự nhầm lẫn phổ biến nhất trong quản lý thời gian là giữa điều gì?",
+        options: [
+            "Việc quan trọng và việc không quan trọng",
+            "Việc khẩn cấp và việc quan trọng",
+            "Việc cá nhân và việc tập thể",
+            "Việc ngắn hạn và việc dài hạn"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 7,
+        question: "Theo Program on Negotiation at Harvard, sai lầm lớn nhất trong đàm phán là gì?",
+        options: [
+            "Chuẩn bị thiếu dữ liệu",
+            "Chỉ tập trung vào vị trí (position)",
+            "Nhượng bộ quá sớm",
+            "Không có phương án dự phòng"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 8,
+        question: "Theo nghiên cứu của Pearson, kỹ năng nào xuất hiện nhiều nhất trong các tin tuyển dụng?",
+        options: [
+            "Kỹ năng lập trình",
+            "Kỹ năng phân tích dữ liệu",
+            "Kỹ năng giao tiếp",
+            "Kỹ năng quản lý dự án"
+        ],
+        correctAnswer: 2
+    },
+    {
+        id: 9,
+        question: "Theo bài viết về Gen Z và kỹ năng sinh tồn, ông Nguyễn Gia Huy cho rằng yếu tố nào là nền tảng phát triển bền vững?",
+        options: [
+            "Kỹ năng chuyên môn",
+            "Bằng cấp và chứng chỉ",
+            "Thái độ và tinh thần trách nhiệm",
+            "Mối quan hệ rộng"
+        ],
+        correctAnswer: 2
+    },
+    {
+        id: 10,
+        question: "Theo nghiên cứu về lãnh đạo hiện đại, lãnh đạo hiệu quả cần chuyển dịch từ 'kiểm soát' sang điều gì?",
+        options: [
+            "Giám sát chặt chẽ hơn",
+            "Trao quyền (empowerment)",
+            "Tập trung vào quy trình",
+            "Tăng cường báo cáo"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 11,
+        question: "Theo bài viết về đàm phán, yếu tố nào có thể làm giảm khả năng phân tích trong đàm phán?",
+        options: [
+            "Tự tin quá mức",
+            "Cảm xúc tiêu cực như tức giận, lo lắng",
+            "Thiếu kiên nhẫn",
+            "Quá thận trọng"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 12,
+        question: "Theo bài báo về người lao động Việt Nam, đại diện upGrad cho rằng trở ngại lớn nhất của người học online là gì?",
+        options: [
+            "Đường truyền internet",
+            "Chi phí học tập cao",
+            "Tính kỷ luật và năng lực tự học",
+            "Thiếu tài liệu tiếng Việt"
+        ],
+        correctAnswer: 2
+    },
+    {
+        id: 13,
+        question: "Theo khái niệm từ Harvard, 'môi trường an toàn tâm lý' (psychological safety) giúp nhân viên làm gì?",
+        options: [
+            "Làm việc nhanh hơn",
+            "Cởi mở chia sẻ ý tưởng và thừa nhận sai sót",
+            "Tăng ca nhiều hơn",
+            "Cạnh tranh với đồng nghiệp"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 14,
+        question: "Theo bài viết về đàm phán chiến lược, ví dụ về phân tích 'interest' thay vì 'position' là gì?",
+        options: [
+            "Nhân viên yêu cầu tăng lương 20%",
+            "Nhân viên mong muốn được ghi nhận hoặc có cơ hội phát triển",
+            "Nhà quản lý từ chối vì ngân sách hạn chế",
+            "Cả hai bên bám vào yêu cầu ban đầu"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 15,
+        question: "Theo Fortune, nguyên nhân chính khiến Gen Z thiếu kỹ năng mềm là gì?",
+        options: [
+            "Do lười biếng",
+            "Thiếu cơ hội thực tập trực tiếp và được cố vấn do đại dịch",
+            "Do chương trình đào tạo kém",
+            "Do tập trung quá nhiều vào công nghệ"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 16,
+        question: "Theo bài viết về lãnh đạo, một lãnh đạo hiệu quả cần làm gì khi xảy ra xung đột?",
+        options: [
+            "Phán xét ngay lập tức",
+            "Lắng nghe trước khi đưa ra phán xét",
+            "Đứng về phía cấp trên",
+            "Phạt cả hai bên"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 17,
+        question: "Theo nghiên cứu từ Harvard, ma trận Eisenhower giúp phân loại công việc thành mấy nhóm?",
+        options: [
+            "2 nhóm",
+            "3 nhóm",
+            "4 nhóm",
+            "5 nhóm"
+        ],
+        correctAnswer: 2
+    },
+    {
+        id: 18,
+        question: "Theo bài viết về đàm phán, người có BATNA mạnh sẽ có lợi thế gì?",
+        options: [
+            "Dễ nhượng bộ hơn",
+            "Có thế chủ động hơn trong đàm phán",
+            "Luôn đạt được yêu cầu",
+            "Không cần chuẩn bị"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 19,
+        question: "Theo Tiền Phong, hoạt động nào được xem là 'phòng thực hành kỹ năng' cho sinh viên?",
+        options: [
+            "Học trên lớp",
+            "Hoạt động ngoại khóa, cuộc thi học thuật và dự án cộng đồng",
+            "Đi làm thêm",
+            "Du lịch"
+        ],
+        correctAnswer: 1
+    },
+    {
+        id: 20,
+        question: "Theo Deloitte, trong kỷ nguyên AI, yếu tố nào vẫn được xem là nền tảng quan trọng?",
+        options: [
+            "Công nghệ hiện đại",
+            "Yếu tố con người và kỹ năng mềm",
+            "Trí tuệ nhân tạo",
+            "Tự động hóa"
+        ],
+        correctAnswer: 1
+    }
+]
     },
 
     // ===============================
