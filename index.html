@@ -8,83 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="https://daihoc.fpt.edu.vn/favicon.ico">
-    <style>
-        /* Style tạm thời cho quiz */
-        .quiz-container {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            margin: 30px 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-        
-        .quiz-question {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f9f9f9;
-            border-radius: 8px;
-        }
-        
-        .quiz-options {
-            display: grid;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .quiz-option {
-            padding: 12px 20px;
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .quiz-option:hover {
-            border-color: #FF6B35;
-            background: rgba(255,107,53,0.05);
-        }
-        
-        .quiz-option.selected {
-            border-color: #FF6B35;
-            background: rgba(255,107,53,0.1);
-            box-shadow: 0 2px 10px rgba(255,107,53,0.2);
-        }
-        
-        .option-letter {
-            font-weight: bold;
-            color: #FF6B35;
-            min-width: 25px;
-        }
-        
-        .quiz-result {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            margin: 30px 0;
-        }
-        
-        .quiz-result-item {
-            transition: all 0.3s ease;
-        }
-        
-        .quiz-result-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .error-message {
-            color: #F44336;
-            padding: 20px;
-            text-align: center;
-            background: #ffebee;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -123,6 +46,13 @@
                     <a href="#" id="quizHistoryBtn"><i class="fas fa-history"></i> Lịch sử quiz</a>
                     <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
                 </div>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <div class="mobile-menu-btn" id="mobileMenuBtn">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </header>
@@ -180,18 +110,17 @@
                         <p>Thử thách bản thân với quiz hôm nay để ôn lại kiến thức và nhận điểm hoạt động.</p>
                         <div class="quiz-progress-wrapper">
                             <div class="quiz-progress-header">
-    <span><i class="fas fa-chart-line"></i> Số câu hỏi hôm nay</span>
-    <span class="quiz-progress-percentage" id="quizPercentage">20 câu hỏi</span>
-</div>
-                            <!-- <div class="quiz-progress">
-    <div class="quiz-progress-bar" id="quizProgressBar" style="width: 0%"></div>
-</div> -->
+                                <span><i class="fas fa-chart-line"></i> Số câu hỏi hôm nay</span>
+                                <span class="quiz-progress-percentage" id="quizPercentage">20 câu hỏi</span>
+                            </div>
                             <div class="quiz-stats">
                                 <span><i class="fas fa-users"></i> <span id="quizCompletedToday">0</span> người đã làm</span>
                                 <span><i class="fas fa-star"></i> Nhận 10 điểm</span>
                             </div>
                         </div>
-                        <button class="btn btn-primary" id="takeQuizBtn">Làm quiz ngay</button>
+                        <button class="btn btn-primary" id="takeQuizBtn">
+                            <i class="fas fa-play"></i> Làm quiz ngay
+                        </button>
                     </div>
                     <div class="quiz-image">
                         <img src="https://images.unsplash.com/photo-1501504905252-473c47e087f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Quiz hằng ngày">
@@ -208,51 +137,80 @@
             </div>
         </section>
 
-        <!-- Chi tiết bài viết / Quiz -->
+        <!-- Chi tiết bài viết -->
         <section id="post-detail-section" class="content-section hidden-section">
             <div class="container">
-                <div id="post-detail-content">
-                    <!-- Nội dung sẽ được render bằng JavaScript -->
-                </div>
+                <div id="post-detail-content"></div>
             </div>
         </section>
 
-        <!-- Quiz Section (Chi tiết quiz) -->
+        <!-- Quiz Section -->
         <section id="quiz-section" class="content-section hidden-section">
             <div class="container">
-                <h2 class="section-title">Quiz hàng ngày</h2>
+                <div class="quiz-header-section">
+                    <h2 class="section-title">Quiz hàng ngày</h2>
+                    <button class="btn btn-primary" id="startQuizNowBtn">
+                        <i class="fas fa-play"></i> Bắt đầu làm quiz ngay
+                    </button>
+                </div>
                 
                 <div class="quiz-stats-section">
-                    <div class="quiz-progress-large">
-                        <h3>Số câu hỏi hôm nay</h3>
-                        <div class="quiz-progress-wrapper">
-                            <div class="quiz-progress-header">
-    <span>Tổng số câu hỏi</span>
-    <span class="quiz-progress-percentage" id="quizPercentage2">20 câu</span>
-</div>
-<!-- <div class="quiz-progress">
-    <div class="quiz-progress-bar" id="quizProgressBar2" style="width: 0%"></div>
-</div> -->
+                    <!-- Thông tin quiz -->
+                    <div class="quiz-info-cards">
+                        <div class="quiz-info-card">
+                            <i class="fas fa-question-circle"></i>
+                            <div class="info-content">
+                                <span class="info-label">Tổng số câu</span>
+                                <span class="info-value" id="totalQuestionsDisplay">20 câu</span>
+                            </div>
+                        </div>
+                        <div class="quiz-info-card">
+                            <i class="fas fa-star"></i>
+                            <div class="info-content">
+                                <span class="info-label">Điểm tối đa</span>
+                                <span class="info-value" id="maxScoreDisplay">200 điểm</span>
+                            </div>
+                        </div>
+                        <div class="quiz-info-card">
+                            <i class="fas fa-clock"></i>
+                            <div class="info-content">
+                                <span class="info-label">Thời gian</span>
+                                <span class="info-value">Không giới hạn</span>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Container cho câu hỏi quiz -->
-                    <div id="quizQuestions" class="quiz-container"></div>
+                    <div id="quizQuestions" class="quiz-questions-container" style="display: none;"></div>
                     
                     <!-- Container cho kết quả quiz -->
-                    <div id="quizResult" class="quiz-result" style="display: none;"></div>
+                    <div id="quizResult" class="quiz-result-container" style="display: none;"></div>
                     
                     <!-- Nút điều khiển quiz -->
-                    <div class="quiz-actions" style="text-align: center; margin: 20px 0;">
-                        <button id="submitQuizBtn" class="btn btn-primary" style="display: none;">Nộp bài</button>
-                        <button id="closeQuizResultBtn" class="btn btn-outline" style="display: none;">Đóng</button>
+                    <div class="quiz-actions">
+                        <button id="submitQuizBtn" class="btn btn-primary" style="display: none;">
+                            <i class="fas fa-check"></i> Nộp bài
+                        </button>
+                        <button id="closeQuizResultBtn" class="btn btn-outline" style="display: none;">
+                            <i class="fas fa-times"></i> Đóng
+                        </button>
                     </div>
                     
-                    <div class="quiz-history-header">
-                        <h3>Lịch sử quiz của bạn</h3>
-                        <button class="btn btn-primary" id="startQuizFromHistory">Làm quiz mới</button>
+                    <!-- Lịch sử quiz -->
+                    <div class="quiz-history-section">
+                        <div class="quiz-history-header">
+                            <h3><i class="fas fa-history"></i> Lịch sử quiz của bạn</h3>
+                            <div class="history-actions">
+                                <button class="btn btn-outline" id="refreshQuizHistoryBtn">
+                                    <i class="fas fa-sync-alt"></i> Làm mới
+                                </button>
+                                <button class="btn btn-primary" id="startQuizFromHistory">
+                                    <i class="fas fa-play"></i> Làm quiz mới
+                                </button>
+                            </div>
+                        </div>
+                        <div id="quiz-history" class="quiz-history-list"></div>
                     </div>
-                    <div id="quiz-history" class="quiz-history-list"></div>
                 </div>
             </div>
         </section>
@@ -266,7 +224,9 @@
                 <div class="activities-grid" id="activities-content"></div>
                 
                 <div class="text-center">
-                    <button class="btn btn-fpt" id="loadMoreActivities">Xem thêm hoạt động</button>
+                    <button class="btn btn-fpt" id="loadMoreActivities">
+                        <i class="fas fa-arrow-down"></i> Xem thêm hoạt động
+                    </button>
                 </div>
             </div>
         </section>
@@ -284,7 +244,9 @@
                         </div>
                         <h3>Diễn đàn thảo luận</h3>
                         <p>Thảo luận, đặt câu hỏi và chia sẻ kinh nghiệm học tập với sinh viên FPT</p>
-                        <button class="btn btn-fpt" id="joinForumBtn">Tham gia ngay</button>
+                        <button class="btn btn-fpt" id="joinForumBtn">
+                            <i class="fas fa-sign-in-alt"></i> Tham gia ngay
+                        </button>
                     </div>
                     
                     <div class="community-card">
@@ -293,7 +255,9 @@
                         </div>
                         <h3>Nhóm học tập</h3>
                         <p>Kết nối với các nhóm học tập theo môn học, chuyên ngành tại FPT</p>
-                        <button class="btn btn-fpt" id="findGroupBtn">Tìm nhóm</button>
+                        <button class="btn btn-fpt" id="findGroupBtn">
+                            <i class="fas fa-search"></i> Tìm nhóm
+                        </button>
                     </div>
                     
                     <div class="community-card">
@@ -302,7 +266,9 @@
                         </div>
                         <h3>Hỏi đáp cùng giảng viên</h3>
                         <p>Đặt câu hỏi trực tiếp với giảng viên và mentor FPT Đà Nẵng</p>
-                        <button class="btn btn-fpt" id="askQuestionBtn">Đặt câu hỏi</button>
+                        <button class="btn btn-fpt" id="askQuestionBtn">
+                            <i class="fas fa-pen"></i> Đặt câu hỏi
+                        </button>
                     </div>
                 </div>
                 
@@ -311,7 +277,9 @@
                     <div id="forum-posts-content"></div>
                     
                     <div class="text-center">
-                        <button class="btn btn-outline" id="createPostBtn">Tạo bài viết mới</button>
+                        <button class="btn btn-outline" id="createPostBtn">
+                            <i class="fas fa-plus"></i> Tạo bài viết mới
+                        </button>
                     </div>
                 </div>
             </div>
@@ -323,8 +291,12 @@
                 <h2 class="section-title">Bảng xếp hạng FPT Đà Nẵng</h2>
                 
                 <div class="ranking-tabs">
-                    <button class="btn btn-outline" id="weeklyRankingBtn">Xếp hạng tuần</button>
-                    <button class="btn btn-primary" id="monthlyRankingBtn">Xếp hạng tháng</button>
+                    <button class="btn btn-outline" id="weeklyRankingBtn">
+                        <i class="fas fa-calendar-week"></i> Xếp hạng tuần
+                    </button>
+                    <button class="btn btn-primary" id="monthlyRankingBtn">
+                        <i class="fas fa-calendar-alt"></i> Xếp hạng tháng
+                    </button>
                 </div>
                 
                 <div id="ranking-content"></div>
@@ -423,10 +395,10 @@
                     <h3>StudyTogether - FPT Đà Nẵng</h3>
                     <p>Website đồng hành cùng tân sinh viên FPTU Đà Nẵng trong những bước đầu đại học.</p>
                     <div class="social-icons">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
                     </div>
                 </div>
                 
