@@ -10,26 +10,45 @@ import {
    LOAD POST DETAIL
 =================================*/
 export function loadPostDetail(id) {
-
+    console.log('Loading post detail for ID:', id, 'Type:', typeof id);
+    
+    // Chuyển id về số nguyên
+    const postId = parseInt(id);
+    console.log('Parsed ID:', postId);
+    
+    // Tìm bài viết với so sánh số
     const post = sampleData.knowledgeContent.find(
-        item => String(item.id) === String(id)
+        item => item.id === postId  // So sánh số với số
     );
 
     if (!post) {
-        console.warn(`Post with id ${id} not found`);
+        console.warn(`Post with id ${id} (parsed: ${postId}) not found`);
+        console.log('Available IDs:', sampleData.knowledgeContent.map(item => item.id));
+        
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Không tìm thấy bài viết!');
+        }
         return;
     }
 
+    console.log('Found post:', post.title);
     hideAllSections();
 
     const detailSection = document.getElementById('post-detail-section');
-    if (!detailSection) return;
+    if (!detailSection) {
+        console.error('post-detail-section not found');
+        return;
+    }
 
     detailSection.classList.remove('hidden-section');
+    
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
 
     renderPostContent(post);
 }
-
 
 /* ===============================
    RENDER POST CONTENT
@@ -41,22 +60,24 @@ function renderPostContent(post) {
 
     const isQuiz = post.type === 'quiz';
 
-    const readingTime = calculateReadingTime(post.description);
+    // SỬA QUAN TRỌNG: Tính thời gian đọc từ content thay vì description
+    const readingTime = calculateReadingTime(post.content || post.description || '');
 
     let contentHtml = '';
 
     if (isQuiz) {
-
+        // Nếu là quiz
         contentHtml = `
             <div class="medium-quiz-wrapper">
-
                 <div class="quiz-intro">
                     <h3>🧠 Thử sức với bài Quiz</h3>
                     <p>Kiểm tra kiến thức của bạn sau khi đọc bài viết.</p>
                 </div>
 
-                <div id="quizQuestions" class="quiz-questions"></div>
+                <!-- Mô tả ngắn (nếu có) -->
+                ${post.description ? `<p class="quiz-description">${escapeHtml(post.description)}</p>` : ''}
 
+                <div id="quizQuestions" class="quiz-questions"></div>
                 <div id="quizResult" class="quiz-result hidden"></div>
 
                 <div class="quiz-actions">
@@ -66,24 +87,24 @@ function renderPostContent(post) {
                 </div>
             </div>
         `;
-
     } else {
-
+        // SỬA QUAN TRỌNG: Hiển thị content dưới dạng HTML thuần
         contentHtml = `
             <div class="medium-content">
-                ${formatPostContent(post.description)}
+                <!-- HIỂN THỊ TRỰC TIẾP HTML TỪ post.content -->
+                ${post.content || formatPostContent(post.description)}
             </div>
         `;
     }
 
+    // Render toàn bộ bài viết
     container.innerHTML = `
         <article class="medium-article">
 
             <!-- Header -->
             <header class="medium-header">
-
                 <div class="medium-category">
-                    ${escapeHtml(post.category || 'General')}
+                    ${escapeHtml(post.category || 'Kiến thức')}
                 </div>
 
                 <h1 class="medium-title">
@@ -96,6 +117,10 @@ function renderPostContent(post) {
                     <span>${readingTime} phút đọc</span>
                 </div>
 
+                <!-- Hiển thị description như một phần giới thiệu ngắn -->
+                ${post.description && post.content ? `
+                    <p class="medium-description">${escapeHtml(post.description)}</p>
+                ` : ''}
             </header>
 
             <!-- Cover Image -->
@@ -105,11 +130,12 @@ function renderPostContent(post) {
                         src="${escapeHtml(post.image)}"
                         alt="${escapeHtml(post.title)}"
                         loading="lazy"
+                        onerror="this.src='https://via.placeholder.com/800x400?text=No+Image'"
                     />
                 </div>
             ` : ''}
 
-            <!-- Body -->
+            <!-- Body - Nội dung chính -->
             ${contentHtml}
 
             <!-- Footer -->
@@ -126,7 +152,6 @@ function renderPostContent(post) {
 
     if (isQuiz) {
         resetQuizAnswers();
-
         setTimeout(() => {
             renderQuizQuestions();
             setupQuizSubmitButton();
@@ -134,43 +159,71 @@ function renderPostContent(post) {
     }
 }
 
-
 /* ===============================
-   FORMAT BLOG CONTENT
+   FORMAT BLOG CONTENT (FALLBACK)
+   Chỉ dùng khi không có content
 =================================*/
 function formatPostContent(text = '') {
-
+    if (!text) return '';
+    
     // Chia đoạn theo xuống dòng
-    const paragraphs = text.split('\n');
+    const paragraphs = text.split('\n').filter(p => p.trim() !== '');
 
-    return paragraphs.map(p => {
+    let inList = false;
+    let listItems = [];
+    let html = '';
 
+    paragraphs.forEach(p => {
+        // Xử lý heading
         if (p.startsWith('## ')) {
-            return `<h2 class="medium-subtitle">${escapeHtml(p.replace('## ', ''))}</h2>`;
+            if (inList) {
+                html += `<ul>${listItems.join('')}</ul>`;
+                listItems = [];
+                inList = false;
+            }
+            html += `<h2 class="medium-subtitle">${escapeHtml(p.replace('## ', ''))}</h2>`;
         }
-
-        if (p.startsWith('> ')) {
-            return `<blockquote class="medium-quote">${escapeHtml(p.replace('> ', ''))}</blockquote>`;
+        // Xử lý blockquote
+        else if (p.startsWith('> ')) {
+            if (inList) {
+                html += `<ul>${listItems.join('')}</ul>`;
+                listItems = [];
+                inList = false;
+            }
+            html += `<blockquote class="medium-quote">${escapeHtml(p.replace('> ', ''))}</blockquote>`;
         }
-
-        if (p.startsWith('- ')) {
-            return `<li>${escapeHtml(p.replace('- ', ''))}</li>`;
+        // Xử lý list item
+        else if (p.startsWith('- ') || p.startsWith('* ')) {
+            inList = true;
+            listItems.push(`<li>${escapeHtml(p.replace(/^[-*]\s/, ''))}</li>`);
         }
+        // Xử lý paragraph thường
+        else {
+            if (inList) {
+                html += `<ul>${listItems.join('')}</ul>`;
+                listItems = [];
+                inList = false;
+            }
+            html += `<p>${escapeHtml(p)}</p>`;
+        }
+    });
 
-        return `<p>${escapeHtml(p)}</p>`;
+    // Đóng list nếu còn
+    if (inList) {
+        html += `<ul>${listItems.join('')}</ul>`;
+    }
 
-    }).join('');
+    return html;
 }
-
 
 /* ===============================
    BUTTON HANDLERS
 =================================*/
 function setupBackButton() {
-
     const backButton = document.getElementById('backToKnowledgeBtn');
     if (!backButton) return;
 
+    // Xóa event cũ bằng cách clone
     const newBtn = backButton.cloneNode(true);
     backButton.parentNode.replaceChild(newBtn, backButton);
 
@@ -180,9 +233,7 @@ function setupBackButton() {
     });
 }
 
-
 function setupQuizSubmitButton() {
-
     const submitBtn = document.getElementById('submitQuizBtn');
     if (!submitBtn) return;
 
@@ -190,7 +241,6 @@ function setupQuizSubmitButton() {
     submitBtn.parentNode.replaceChild(newBtn, submitBtn);
 
     newBtn.addEventListener('click', function() {
-
         const result = showQuizResult();
         updateStatsAfterQuiz(result);
 
@@ -198,16 +248,13 @@ function setupQuizSubmitButton() {
 
         const resultDiv = document.getElementById('quizResult');
         if (resultDiv) resultDiv.classList.remove('hidden');
-
     });
 }
-
 
 /* ===============================
    CLOSE DETAIL
 =================================*/
 function closePostDetail() {
-
     const detailSection = document.getElementById('post-detail-section');
     const knowledgeSection = document.getElementById('knowledge-section');
 
@@ -222,7 +269,6 @@ function closePostDetail() {
     resetQuizAnswers();
 }
 
-
 /* ===============================
    HELPERS
 =================================*/
@@ -232,13 +278,14 @@ function hideAllSections() {
     });
 }
 
-
 function calculateReadingTime(text = '') {
+    if (!text) return 1;
     const wordsPerMinute = 200;
-    const wordCount = text.split(' ').length;
+    // Loại bỏ HTML tags nếu có
+    const plainText = text.replace(/<[^>]*>/g, '');
+    const wordCount = plainText.split(/\s+/).length;
     return Math.max(1, Math.ceil(wordCount / wordsPerMinute));
 }
-
 
 function escapeHtml(unsafe) {
     if (!unsafe) return '';

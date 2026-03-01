@@ -31,8 +31,12 @@ export function createContentCard(content, isKnowledge = false) {
             ? content.description.substring(0, 120) + '...'
             : content.description;
 
+    // Đảm bảo id là số
+    const cardId = content.id;
+    console.log(`Creating card with ID: ${cardId} (${typeof cardId})`);
+
     return `
-        <div class="feature-card" data-id="${content.id}">
+        <div class="feature-card" data-id="${cardId}">
             <div class="feature-image">
                 <img src="${content.image}" alt="${content.title}" loading="lazy">
             </div>
@@ -50,9 +54,38 @@ export function createContentCard(content, isKnowledge = false) {
                             : ''
                     }
                 </div>
+                
+                <button class="btn-read-more" onclick="window.viewPostDetail(${cardId})">
+                    Đọc thêm <i class="fas fa-arrow-right"></i>
+                </button>
             </div>
         </div>
     `;
+}
+
+/* =====================================================
+   CLICK EVENT
+=====================================================*/
+function enableContentCardClick(container) {
+    if (!container) return;
+
+    container.addEventListener('click', e => {
+        if (e.target.closest('.btn-read-more')) return;
+
+        const card = e.target.closest('.feature-card');
+        if (!card) return;
+
+        const id = card.dataset.id;
+        if (!id) return;
+
+        console.log('Card clicked, ID from dataset:', id, typeof id);
+        
+        card.classList.add('card-clicked');
+        setTimeout(() => card.classList.remove('card-clicked'), 150);
+
+        // Gọi trực tiếp loadPostDetail
+        loadPostDetail(id);
+    });
 }
 
 /* =====================================================
@@ -159,11 +192,19 @@ export function createForumPost(post) {
 /* =====================================================
    RENDER FUNCTIONS
 =====================================================*/
+/* =====================================================
+   RENDER FUNCTIONS
+=====================================================*/
 export function renderFeaturedContent() {
+    // Nếu không có featuredContent riêng thì lấy 3 bài từ knowledgeContent
+    const featuredData = sampleData.featuredContent?.length 
+        ? sampleData.featuredContent 
+        : sampleData.knowledgeContent.slice(0, 3);
+    
     renderList(
         'featured-content',
-        sampleData.featuredContent,
-        item => createContentCard(item),
+        featuredData,
+        item => createContentCard(item), // Không cần isKnowledge = true vì featured content hiển thị đơn giản hơn
         enableContentCardClick
     );
 }
@@ -172,7 +213,7 @@ export function renderKnowledgeContent() {
     renderList(
         'knowledge-content',
         sampleData.knowledgeContent,
-        item => createContentCard(item, true),
+        item => createContentCard(item, true), // true để hiển thị mô tả dài hơn
         enableContentCardClick
     );
 }
@@ -193,26 +234,6 @@ export function renderForumPosts() {
     );
 }
 
-/* =====================================================
-   CLICK EVENT – MƯỢT, KHÔNG DUPLICATE
-=====================================================*/
-function enableContentCardClick(container) {
-
-    container.addEventListener('click', e => {
-
-        const card = e.target.closest('.feature-card');
-        if (!card) return;
-
-        const id = card.dataset.id;
-        if (!id) return;
-
-        // Animation click nhẹ
-        card.classList.add('card-clicked');
-        setTimeout(() => card.classList.remove('card-clicked'), 150);
-
-        loadPostDetail(id);
-    });
-}
 
 /* =====================================================
    RANKING

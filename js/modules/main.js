@@ -332,11 +332,13 @@ function handleCardClick(e) {
     const card = e.target.closest('.feature-card');
     if (!card) return;
 
-    const inKnowledge = card.closest('#knowledge-content');
-    if (!inKnowledge) return;
+    // Kiểm tra nếu click vào nút "Đọc thêm" thì không xử lý (vì nút đã có onclick riêng)
+    if (e.target.closest('.btn-read-more')) return;
 
     const id = card.dataset.id;
     if (id) {
+        // Load chi tiết bài viết - KHÔNG CẦN KIỂM TRA inKnowledge NỮA
+        // Card ở cả featured-content và knowledge-content đều xử lý như nhau
         loadPostDetail(id);
     }
 }
