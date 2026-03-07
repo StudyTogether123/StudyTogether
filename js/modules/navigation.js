@@ -1,4 +1,4 @@
-// navigation.js
+// js/modules/navigation.js
 import {
     renderKnowledgeContent,
     renderQuizHistory,
@@ -6,7 +6,6 @@ import {
     renderForumPosts,
     renderRankings
 } from './ui.js';
-
 
 /* ==========================================
    CHUYỂN SECTION
@@ -50,7 +49,6 @@ export function switchSection(sectionId) {
     renderSectionContent(sectionId);
 }
 
-
 /* ==========================================
    RENDER NỘI DUNG TỪNG SECTION
 ========================================== */
@@ -79,7 +77,10 @@ function renderSectionContent(sectionId) {
             break;
 
         case 'profile-section':
-            updateProfileUI();
+            // Gọi hàm cập nhật profile từ global (đã export từ main.js)
+            if (typeof window.updateProfileUI === 'function') {
+                window.updateProfileUI();
+            }
             break;
 
         case 'home-section':
@@ -89,32 +90,12 @@ function renderSectionContent(sectionId) {
     }
 }
 
-
 /* ==========================================
-   CẬP NHẬT PROFILE UI
-========================================== */
-function updateProfileUI() {
-
-    const username = localStorage.getItem("username");
-    const email = localStorage.getItem("email");
-    const points = localStorage.getItem("points");
-
-    const usernameEl = document.getElementById("profileUsername");
-    const emailEl = document.getElementById("profileEmail");
-    const pointsEl = document.getElementById("profilePoints");
-
-    if (usernameEl) usernameEl.textContent = username || "---";
-    if (emailEl) emailEl.textContent = email || "Chưa cập nhật";
-    if (pointsEl) pointsEl.textContent = points || "0";
-}
-
-
-/* ==========================================
-   INIT NAVIGATION - PHẢI EXPORT HÀM NÀY
+   INIT NAVIGATION
 ========================================== */
 export function initNavigation() {
 
-    console.log("Initializing navigation..."); // Debug
+    console.log("Initializing navigation...");
 
     const navLinks = document.querySelectorAll('[data-section]');
 
@@ -125,11 +106,9 @@ export function initNavigation() {
             e.preventDefault();
 
             const sectionName = this.dataset.section;
-
             if (!sectionName) return;
 
             const sectionId = sectionName + '-section';
-
             switchSection(sectionId);
         });
 

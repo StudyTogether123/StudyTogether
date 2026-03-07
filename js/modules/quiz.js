@@ -1,5 +1,7 @@
+// js/modules/quiz.js
 import { sampleData, appState } from './data.js';
 import { renderQuizHistory } from './ui.js';
+import { authService } from '../services/auth.service.js'; // THÊM IMPORT
 
 /* ===============================
    KIỂM TRA DỮ LIỆU
@@ -26,7 +28,6 @@ export function startQuiz() {
         quizQuestions.style.display = 'block';
         quizQuestions.classList.add('fade-in');
         
-        // Scroll đến phần câu hỏi
         setTimeout(() => {
             quizQuestions.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
@@ -40,13 +41,11 @@ export function startQuiz() {
         startBtn.style.display = 'none';
     }
     
-    // HIỂN THỊ NÚT NỘP BÀI NGAY KHI MỞ ĐỀ
     if (submitBtn) {
         submitBtn.style.display = 'inline-block';
-        submitBtn.classList.remove('pulse-animation'); // Chưa cần pulse
+        submitBtn.classList.remove('pulse-animation');
     }
     
-    // Render câu hỏi
     renderQuizQuestions();
 }
 
@@ -62,25 +61,11 @@ export function closeQuiz() {
     const submitBtn = document.getElementById('submitQuizBtn');
     const closeBtn = document.getElementById('closeQuizResultBtn');
     
-    if (quizQuestions) {
-        quizQuestions.style.display = 'none';
-    }
-    
-    if (quizResult) {
-        quizResult.style.display = 'none';
-    }
-    
-    if (startBtn) {
-        startBtn.style.display = 'inline-flex';
-    }
-    
-    if (submitBtn) {
-        submitBtn.style.display = 'none';
-    }
-    
-    if (closeBtn) {
-        closeBtn.style.display = 'none';
-    }
+    if (quizQuestions) quizQuestions.style.display = 'none';
+    if (quizResult) quizResult.style.display = 'none';
+    if (startBtn) startBtn.style.display = 'inline-flex';
+    if (submitBtn) submitBtn.style.display = 'none';
+    if (closeBtn) closeBtn.style.display = 'none';
     
     resetQuizAnswers();
 }
@@ -97,10 +82,8 @@ export function renderQuizQuestions() {
         return;
     }
 
-    // Reset câu trả lời
     appState.currentQuizAnswers = {};
 
-    // Kiểm tra dữ liệu
     const validation = validateQuizData();
     if (!validation.valid) {
         container.innerHTML = `
@@ -115,9 +98,7 @@ export function renderQuizQuestions() {
         `;
         
         const backBtn = document.getElementById('backToQuizMenuBtn');
-        if (backBtn) {
-            backBtn.addEventListener('click', closeQuiz);
-        }
+        if (backBtn) backBtn.addEventListener('click', closeQuiz);
         return;
     }
 
@@ -125,13 +106,11 @@ export function renderQuizQuestions() {
     const questions = quiz.questions;
     const totalQuestions = questions.length;
 
-    // Tạo HTML cho câu hỏi
     let questionsHtml = '';
     
     questions.forEach((q, index) => {
         const questionId = q.id || `q${index + 1}`;
         
-        // Tạo options
         let optionsHtml = '';
         if (q.options && Array.isArray(q.options)) {
             q.options.forEach((option, optIndex) => {
@@ -158,7 +137,6 @@ export function renderQuizQuestions() {
         `;
     });
 
-    // Hoàn thiện HTML
     container.innerHTML = `
         <div class="quiz-header">
             <div class="quiz-header-top">
@@ -178,16 +156,11 @@ export function renderQuizQuestions() {
         </div>
     `;
 
-    // Gắn sự kiện
     attachQuizEvents();
     
-    // Gắn sự kiện cho nút đóng
     const closeQuizBtn = document.getElementById('closeQuizBtn');
-    if (closeQuizBtn) {
-        closeQuizBtn.addEventListener('click', closeQuiz);
-    }
+    if (closeQuizBtn) closeQuizBtn.addEventListener('click', closeQuiz);
     
-    // ĐẢM BẢO NÚT NỘP BÀI HIỂN THỊ (dự phòng)
     const submitBtn = document.getElementById('submitQuizBtn');
     if (submitBtn) {
         submitBtn.style.display = 'inline-block';
@@ -199,39 +172,31 @@ export function renderQuizQuestions() {
    GẮN SỰ KIỆN CHO QUIZ
 ================================= */
 function attachQuizEvents() {
-    // Gắn sự kiện cho các đáp án
     const options = document.querySelectorAll('.quiz-option');
     options.forEach(option => {
         option.removeEventListener('click', handleQuizOptionClick);
         option.addEventListener('click', handleQuizOptionClick);
     });
 
-    // Gắn sự kiện cho nút nộp bài (không cần clone lại vì đã làm trong setupQuiz)
     const submitBtn = document.getElementById('submitQuizBtn');
-    if (submitBtn) {
-        // Chỉ gắn event nếu chưa có
-        if (!submitBtn.hasAttribute('data-listener')) {
-            submitBtn.setAttribute('data-listener', 'true');
-            submitBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const result = showQuizResult();
-                if (result) {
-                    updateStatsAfterQuiz(result);
-                }
-            });
-        }
+    if (submitBtn && !submitBtn.hasAttribute('data-listener')) {
+        submitBtn.setAttribute('data-listener', 'true');
+        submitBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const result = showQuizResult();
+            if (result) {
+                updateStatsAfterQuiz(result);
+            }
+        });
     }
 
-    // Gắn sự kiện cho nút đóng kết quả
     const closeResultBtn = document.getElementById('closeQuizResultBtn');
-    if (closeResultBtn) {
-        if (!closeResultBtn.hasAttribute('data-listener')) {
-            closeResultBtn.setAttribute('data-listener', 'true');
-            closeResultBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                closeQuiz();
-            });
-        }
+    if (closeResultBtn && !closeResultBtn.hasAttribute('data-listener')) {
+        closeResultBtn.setAttribute('data-listener', 'true');
+        closeResultBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeQuiz();
+        });
     }
 }
 
@@ -243,18 +208,14 @@ function handleQuizOptionClick(e) {
     const questionId = element.dataset.question;
     const answerId = parseInt(element.dataset.answer);
 
-    // Bỏ selected của cùng câu
-    document.querySelectorAll(
-        `.quiz-option[data-question="${questionId}"]`
-    ).forEach(opt => opt.classList.remove('selected'));
+    document.querySelectorAll(`.quiz-option[data-question="${questionId}"]`)
+        .forEach(opt => opt.classList.remove('selected'));
 
     element.classList.add('selected');
     element.style.animation = 'optionPulse 0.3s ease';
 
-    // Lưu đáp án
     appState.currentQuizAnswers[questionId] = answerId;
 
-    // Kiểm tra đã trả lời hết chưa (chỉ để thêm pulse animation)
     const validation = validateQuizData();
     if (validation.valid) {
         const totalQuestions = validation.data.questions.length;
@@ -304,7 +265,6 @@ function calculateQuizScore() {
    HIỂN THỊ KẾT QUẢ
 ================================= */
 export function showQuizResult() {
-    // Kiểm tra đã trả lời câu nào chưa
     if (Object.keys(appState.currentQuizAnswers).length === 0) {
         showNotification('Bạn chưa trả lời câu nào!', 'warning');
         return null;
@@ -316,12 +276,8 @@ export function showQuizResult() {
     
     if (!container) return null;
 
-    // Ẩn nút nộp bài
-    if (submitBtn) {
-        submitBtn.style.display = 'none';
-    }
+    if (submitBtn) submitBtn.style.display = 'none';
 
-    // Tạo HTML kết quả
     let resultHtml = `
         <div class="quiz-result-container">
             <div class="result-header">
@@ -395,11 +351,8 @@ export function showQuizResult() {
     
     container.innerHTML = resultHtml;
     
-    // Gắn sự kiện cho các nút
     const backBtn = document.getElementById('backToQuizMenuBtn');
-    if (backBtn) {
-        backBtn.addEventListener('click', closeQuiz);
-    }
+    if (backBtn) backBtn.addEventListener('click', closeQuiz);
     
     const retryBtn = document.getElementById('retryQuizBtn');
     if (retryBtn) {
@@ -409,7 +362,6 @@ export function showQuizResult() {
         });
     }
     
-    // Hiển thị kết quả
     container.style.display = 'block';
     container.classList.add('fade-in');
 
@@ -424,7 +376,7 @@ export function resetQuizAnswers() {
     
     const submitBtn = document.getElementById('submitQuizBtn');
     if (submitBtn) {
-        submitBtn.style.display = 'inline-block'; // Giữ hiển thị nút
+        submitBtn.style.display = 'inline-block';
         submitBtn.classList.remove('pulse-animation');
     }
     
@@ -439,7 +391,7 @@ export function resetQuizAnswers() {
 export function updateStatsAfterQuiz(result) {
     if (!result || result.score <= 0) return;
 
-    // Cập nhật số người đã làm hôm nay
+    // Cập nhật số người đã làm hôm nay (UI thống kê)
     const quizCompletedToday = document.getElementById('quizCompletedToday');
     if (quizCompletedToday) {
         let currentCompleted = parseInt(quizCompletedToday.textContent) || 0;
@@ -447,10 +399,18 @@ export function updateStatsAfterQuiz(result) {
         quizCompletedToday.textContent = currentCompleted;
     }
 
-    // Lưu lịch sử
-    if (!sampleData.quizHistory) {
-        sampleData.quizHistory = [];
+    // Tính điểm vừa đạt được
+    const pointsEarned = result.score * 10;
+
+    // Cập nhật điểm qua authService
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+        const newPoints = (currentUser.points || 0) + pointsEarned;
+        authService.updatePoints(newPoints);
     }
+
+    // Lưu lịch sử quiz vào sampleData (demo)
+    if (!sampleData.quizHistory) sampleData.quizHistory = [];
 
     const today = new Date();
     const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
@@ -460,7 +420,7 @@ export function updateStatsAfterQuiz(result) {
         date: dateStr,
         topic: sampleData.dailyQuiz?.title || 'Quiz hàng ngày',
         score: `${result.score}/${result.total}`,
-        points: result.score * 10,
+        points: pointsEarned,
         percentage: result.percentage
     });
 
@@ -473,7 +433,12 @@ export function updateStatsAfterQuiz(result) {
     const quizHistoryContainer = document.getElementById('quiz-history');
     if (quizHistoryContainer && typeof renderQuizHistory === 'function') {
         renderQuizHistory();
-        showNotification('Đã cập nhật điểm số!', 'success');
+        showNotification(`Bạn đã nhận được ${pointsEarned} điểm!`, 'success');
+    }
+
+    // Đồng thời cập nhật appState.currentUser.points nếu vẫn dùng (tùy chọn)
+    if (appState.currentUser) {
+        appState.currentUser.points = (parseInt(appState.currentUser.points) || 0) + pointsEarned;
     }
 }
 
@@ -509,18 +474,14 @@ export function initQuiz() {
 }
 
 function setupQuiz() {
-    // Gắn sự kiện cho nút bắt đầu quiz
     const startQuizNowBtn = document.getElementById('startQuizNowBtn');
     if (startQuizNowBtn) {
         startQuizNowBtn.addEventListener('click', (e) => {
             e.preventDefault();
             
-            // Kiểm tra đăng nhập
-            if (!appState.currentUser) {
+            if (!authService.isAuthenticated()) {
                 showNotification('Vui lòng đăng nhập để làm quiz!', 'warning');
-                if (window.openAuthModal) {
-                    window.openAuthModal(true);
-                }
+                if (window.openAuthModal) window.openAuthModal(true);
                 return;
             }
             
@@ -528,7 +489,6 @@ function setupQuiz() {
         });
     }
     
-    // Gắn sự kiện cho nút làm mới lịch sử
     const refreshHistoryBtn = document.getElementById('refreshQuizHistoryBtn');
     if (refreshHistoryBtn) {
         refreshHistoryBtn.addEventListener('click', (e) => {
@@ -540,23 +500,18 @@ function setupQuiz() {
         });
     }
     
-    // Gắn sự kiện cho nút submit 
     const submitBtn = document.getElementById('submitQuizBtn');
     if (submitBtn) {
-        // Xóa event cũ bằng cách clone (giữ nguyên)
         const newSubmitBtn = submitBtn.cloneNode(true);
         submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
         
         newSubmitBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const result = showQuizResult();
-            if (result) {
-                updateStatsAfterQuiz(result);
-            }
+            if (result) updateStatsAfterQuiz(result);
         });
     }
     
-    // Gắn sự kiện cho nút đóng
     const closeBtn = document.getElementById('closeQuizResultBtn');
     if (closeBtn) {
         const newCloseBtn = closeBtn.cloneNode(true);
@@ -569,7 +524,6 @@ function setupQuiz() {
     }
 }
 
-// Export tất cả các hàm
 export default {
     renderQuizQuestions,
     showQuizResult,

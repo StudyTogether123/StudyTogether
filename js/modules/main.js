@@ -13,19 +13,25 @@ import {
     showQuizResult, 
     updateStatsAfterQuiz,
     resetQuizAnswers,
-    initQuiz 
+    initQuiz,
+    startQuiz,
+    closeQuiz
 } from './quiz.js';
 
 import { 
     openAuthModal, 
     handleAuth,
-    closeAuthModal,
     logout 
 } from './auth.js';
+
+import { initForgotPassword } from './forgotPassword.js';
 
 import { switchSection, initNavigation } from './navigation.js';
 import { appState, sampleData } from './data.js';
 import { loadPostDetail } from './postDetail.js';
+
+// Import AuthService
+import { authService } from '../services/auth.service.js';
 
 // =============================
 // KIỂM TRA VÀ XỬ LÝ LOCALSTORAGE
@@ -81,72 +87,91 @@ if (typeof toastr !== 'undefined') {
 }
 
 // =============================
-// ĐỒNG BỘ TRẠNG THÁI USER
+// CẬP NHẬT GIAO DIỆN THEO AUTH STATE
 // =============================
-function syncUserFromStorage() {
-    let username = null;
-    let token = null;
-    let email = null;
-    let points = null;
-    
-    try {
-        username = localStorage.getItem("username");
-        token = localStorage.getItem("token");
-        email = localStorage.getItem("email");
-        points = localStorage.getItem("points");
-    } catch (e) {
-        console.warn("Lỗi đọc localStorage:", e);
-    }
-    
-    if (!username || !token) {
-        try {
-            username = username || sessionStorage.getItem("username");
-            token = token || sessionStorage.getItem("token");
-            email = email || sessionStorage.getItem("email");
-            points = points || sessionStorage.getItem("points");
-        } catch (e) {
-            console.warn("Lỗi đọc sessionStorage:", e);
-        }
-    }
+function updateUIForAuth(user) {
+    const authButtons = document.getElementById('authButtons');
+    const userMenu = document.getElementById('userMenu');
+    const displayUsername = document.getElementById('displayUsername');
 
-    console.log("🔄 Syncing user:", { username, token });
+    if (!authButtons || !userMenu) return;
 
-    const authButtons = document.getElementById("authButtons");
-    const userMenu = document.getElementById("userMenu");
-    const displayUsername = document.getElementById("displayUsername");
-
-    if (username && token) {
-        appState.currentUser = { 
-            name: username,
-            email: email || 'Chưa cập nhật',
-            points: points || '0'
-        };
-
-        if (authButtons) authButtons.style.display = "none";
-        if (userMenu) {
-            userMenu.style.display = "flex";
-        }
-        if (displayUsername) displayUsername.textContent = username;
-
-        updateProfileUI(username, email, points);
+    if (user) {
+        authButtons.style.display = 'none';
+        userMenu.style.display = 'flex';
+        if (displayUsername) displayUsername.textContent = user.username;
     } else {
-        appState.currentUser = null;
-        if (authButtons) authButtons.style.display = "flex";
-        if (userMenu) userMenu.style.display = "none";
+        authButtons.style.display = 'flex';
+        userMenu.style.display = 'none';
     }
+
+    // Cập nhật appState.currentUser để các module khác dùng
+    appState.currentUser = user ? { 
+        name: user.username,
+        email: user.email,
+        points: user.points 
+    } : null;
 }
 
 // =============================
 // CẬP NHẬT PROFILE UI
 // =============================
-function updateProfileUI(username, email, points) {
-    const profileUsername = document.getElementById("profileUsername");
-    const profileEmail = document.getElementById("profileEmail");
-    const profilePoints = document.getElementById("profilePoints");
+function updateProfileUI() {
+    const user = authService.getCurrentUser();
+    if (!user) return;
+
+    const usernameEl = document.getElementById('profileUsername');
+    const emailEl = document.getElementById('profileEmail');
+    const pointsEl = document.getElementById('profilePoints');
+    const avatarEl = document.getElementById('profileAvatar');
+    const badgeEl = document.getElementById('profileBadge');
+    const rankStat = document.getElementById('rankStat');
+    const joinDateStat = document.getElementById('joinDateStat');
+    const activityStat = document.getElementById('activityStat');
+
+    // Cập nhật thông tin
+    if (usernameEl) usernameEl.textContent = user.username || '---';
+    if (emailEl) emailEl.textContent = user.email || 'Chưa cập nhật';
     
-    if (profileUsername) profileUsername.textContent = username || "---";
-    if (profileEmail) profileEmail.textContent = email || "Chưa cập nhật";
-    if (profilePoints) profilePoints.textContent = points || "0";
+    if (pointsEl) {
+        pointsEl.innerHTML = `${user.points || 0} <span>điểm</span>`;
+    }
+
+    // Avatar
+    if (avatarEl && user.username) {
+        avatarEl.textContent = user.username.charAt(0).toUpperCase();
+    }
+
+    // Badge dựa trên điểm
+    if (badgeEl && user.points !== undefined) {
+        const pointNum = user.points;
+        if (pointNum >= 1000) badgeEl.textContent = 'Kim cương';
+        else if (pointNum >= 500) badgeEl.textContent = 'Vàng';
+        else if (pointNum >= 200) badgeEl.textContent = 'Bạc';
+        else if (pointNum >= 50) badgeEl.textContent = 'Đồng';
+        else badgeEl.textContent = 'Thành viên mới';
+    }
+
+    // Rank stat
+    if (rankStat && user.points !== undefined) {
+        const pointNum = user.points;
+        if (pointNum >= 1000) rankStat.textContent = 'Kim cương';
+        else if (pointNum >= 500) rankStat.textContent = 'Vàng';
+        else if (pointNum >= 200) rankStat.textContent = 'Bạc';
+        else if (pointNum >= 50) rankStat.textContent = 'Đồng';
+        else rankStat.textContent = 'Bronze';
+    }
+
+    // Join date (có thể lấy từ API, tạm thời để mặc định)
+    if (joinDateStat) {
+        joinDateStat.textContent = '2024'; // hoặc từ user.createdAt nếu có
+    }
+
+    // Quiz đã làm (có thể từ user.quizCount nếu API trả về)
+    if (activityStat) {
+        // Tạm thời lấy từ sampleData hoặc để 0
+        activityStat.textContent = sampleData.quizHistory?.length || 0;
+    }
 }
 
 // =============================
@@ -154,56 +179,44 @@ function updateProfileUI(username, email, points) {
 // =============================
 function handleLogout(e) {
     e?.preventDefault();
-
-    try {
-        localStorage.removeItem("username");
-        localStorage.removeItem("token");
-        localStorage.removeItem("email");
-        localStorage.removeItem("points");
-        
-        sessionStorage.removeItem("username");
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("email");
-        sessionStorage.removeItem("points");
-    } catch (e) {
-        console.warn("Lỗi xóa storage:", e);
-    }
-
-    appState.currentUser = null;
-
-    if (typeof toastr !== 'undefined') {
-        toastr.success("👋 Đăng xuất thành công!");
-    }
+    authService.logout();
+    toastr.success('👋 Đăng xuất thành công!');
+    switchSection('home-section');
     
-    syncUserFromStorage();
-    switchSection("home-section");
-    
-    const dropdownMenu = document.getElementById("dropdownMenu");
-    if (dropdownMenu) dropdownMenu.classList.remove("show-dropdown");
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (dropdownMenu) dropdownMenu.classList.remove('show-dropdown');
 }
+
+// =============================
+// XỬ LÝ ĐĂNG NHẬP (từ auth.js sẽ gọi authService, nhưng ta cần xử lý submit)
+// Hàm handleAuth được import từ auth.js, nhưng nó dùng authService bên trong auth.js
+// Nếu auth.js đã được sửa để dùng authService thì không cần thay đổi.
+// Ở đây ta giả sử auth.js đã dùng authService.
+// =============================
 
 // =============================
 // MỞ QUIZ SECTION
 // =============================
 function openQuizSection() {
-    if (!appState.currentUser) {
-        if (typeof toastr !== 'undefined') {
-            toastr.warning("Vui lòng đăng nhập để làm quiz!");
-        }
+    const user = authService.getCurrentUser();
+    if (!user) {
+        toastr.warning('Vui lòng đăng nhập để làm quiz!');
         openAuthModal(true);
         return;
     }
     
-    // Chuyển đến section quiz
-    switchSection("quiz-section");
+    switchSection('quiz-section');
     
-    // Render quiz questions
-    setTimeout(() => {
-        renderQuizQuestions();
-        
-        // Khởi tạo quiz events
-        initQuiz();
-    }, 100);
+    const quizResult = document.getElementById('quizResult');
+    if (quizResult) quizResult.style.display = 'none';
+    
+    const startBtn = document.getElementById('startQuizNowBtn');
+    if (startBtn) startBtn.style.display = 'inline-flex';
+    
+    const quizQuestions = document.getElementById('quizQuestions');
+    if (quizQuestions) quizQuestions.style.display = 'none';
+    
+    console.log('📋 Đã mở quiz section');
 }
 
 // =============================
@@ -212,10 +225,9 @@ function openQuizSection() {
 function handleCreatePost(event) {
     event.preventDefault();
 
-    if (!appState.currentUser) {
-        if (typeof toastr !== 'undefined') {
-            toastr.warning("Bạn cần đăng nhập để tạo bài viết!");
-        }
+    const user = authService.getCurrentUser();
+    if (!user) {
+        toastr.warning('Bạn cần đăng nhập để tạo bài viết!');
         openAuthModal(true);
         return;
     }
@@ -225,30 +237,24 @@ function handleCreatePost(event) {
     const content = document.getElementById('postContent')?.value.trim();
 
     if (!title || !content) {
-        if (typeof toastr !== 'undefined') {
-            toastr.error("Vui lòng nhập đầy đủ thông tin!");
-        }
+        toastr.error('Vui lòng nhập đầy đủ thông tin!');
         return;
     }
 
     if (title.length < 5) {
-        if (typeof toastr !== 'undefined') {
-            toastr.error("Tiêu đề phải có ít nhất 5 ký tự!");
-        }
+        toastr.error('Tiêu đề phải có ít nhất 5 ký tự!');
         return;
     }
 
     if (content.length < 10) {
-        if (typeof toastr !== 'undefined') {
-            toastr.error("Nội dung phải có ít nhất 10 ký tự!");
-        }
+        toastr.error('Nội dung phải có ít nhất 10 ký tự!');
         return;
     }
 
     const newPost = {
         id: Date.now(),
-        author: appState.currentUser.name,
-        time: "Vừa xong",
+        author: user.username,
+        time: 'Vừa xong',
         title: title,
         content: content,
         likes: 0,
@@ -265,63 +271,60 @@ function handleCreatePost(event) {
 
     const modal = document.getElementById('createPostModal');
     if (modal) {
-        modal.style.display = "none";
+        modal.style.display = 'none';
         modal.classList.remove('show');
     }
     
     const postForm = document.getElementById('postForm');
     if (postForm) postForm.reset();
     
-    if (typeof toastr !== 'undefined') {
-        toastr.success("✅ Đăng bài thành công!");
-    }
-    
-    switchSection("community-section");
+    toastr.success('✅ Đăng bài thành công!');
+    switchSection('community-section');
 }
 
 // =============================
 // KHỞI TẠO USER DROPDOWN
 // =============================
 function initUserDropdown() {
-    const userInfo = document.getElementById("userInfo");
-    const dropdownMenu = document.getElementById("dropdownMenu");
+    const userInfo = document.getElementById('userInfo');
+    const dropdownMenu = document.getElementById('dropdownMenu');
 
     if (!userInfo || !dropdownMenu) return;
 
-    userInfo.addEventListener("click", function(e) {
+    userInfo.addEventListener('click', function(e) {
         e.stopPropagation();
         e.preventDefault();
-        dropdownMenu.classList.toggle("show-dropdown");
+        dropdownMenu.classList.toggle('show-dropdown');
     });
 
-    document.addEventListener("click", function(e) {
+    document.addEventListener('click', function(e) {
         if (!userInfo.contains(e.target) && !dropdownMenu.contains(e.target)) {
-            dropdownMenu.classList.remove("show-dropdown");
+            dropdownMenu.classList.remove('show-dropdown');
         }
     });
 
-    const profileBtn = document.getElementById("profileBtn");
-    const quizHistoryBtn = document.getElementById("quizHistoryBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
+    const profileBtn = document.getElementById('profileBtn');
+    const quizHistoryBtn = document.getElementById('quizHistoryBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     if (profileBtn) {
-        profileBtn.addEventListener("click", function(e) {
+        profileBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            switchSection("profile-section");
-            dropdownMenu.classList.remove("show-dropdown");
+            switchSection('profile-section');
+            dropdownMenu.classList.remove('show-dropdown');
         });
     }
 
     if (quizHistoryBtn) {
-        quizHistoryBtn.addEventListener("click", function(e) {
+        quizHistoryBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            switchSection("quiz-section");
-            dropdownMenu.classList.remove("show-dropdown");
+            switchSection('quiz-section');
+            dropdownMenu.classList.remove('show-dropdown');
         });
     }
 
     if (logoutBtn) {
-        logoutBtn.addEventListener("click", handleLogout);
+        logoutBtn.addEventListener('click', handleLogout);
     }
 }
 
@@ -332,22 +335,33 @@ function handleCardClick(e) {
     const card = e.target.closest('.feature-card');
     if (!card) return;
 
-    // Kiểm tra nếu click vào nút "Đọc thêm" thì không xử lý (vì nút đã có onclick riêng)
     if (e.target.closest('.btn-read-more')) return;
 
     const id = card.dataset.id;
     if (id) {
-        // Load chi tiết bài viết - KHÔNG CẦN KIỂM TRA inKnowledge NỮA
-        // Card ở cả featured-content và knowledge-content đều xử lý như nhau
         loadPostDetail(id);
     }
+}
+
+// =============================
+// ĐÓNG TẤT CẢ MODAL
+// =============================
+function closeAllModals() {
+    const modals = ['authModal', 'forgotPasswordModal', 'otpModal', 'resetPasswordModal', 'createPostModal'];
+    modals.forEach(id => {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        }
+    });
 }
 
 // =============================
 // KHỞI TẠO EVENT LISTENERS
 // =============================
 function initEventListeners() {
-    console.log("📋 Initializing event listeners...");
+    console.log('📋 Initializing event listeners...');
 
     // Login/Register buttons
     const loginBtn = document.getElementById('loginBtn');
@@ -356,6 +370,7 @@ function initEventListeners() {
     if (loginBtn) {
         loginBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            closeAllModals();
             openAuthModal(true);
         });
     }
@@ -363,6 +378,7 @@ function initEventListeners() {
     if (registerBtn) {
         registerBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            closeAllModals();
             openAuthModal(false);
         });
     }
@@ -391,14 +407,17 @@ function initEventListeners() {
 
     // Click outside to close modal
     window.addEventListener('click', (e) => {
-        const modal = document.getElementById('authModal');
-        if (e.target === modal) {
-            modal.style.display = 'none';
-            modal.classList.remove('show');
-        }
+        const modals = ['authModal', 'forgotPasswordModal', 'otpModal', 'resetPasswordModal', 'createPostModal'];
+        modals.forEach(id => {
+            const modal = document.getElementById(id);
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+            }
+        });
     });
 
-    // Auth form
+    // Auth form (xử lý submit sẽ do auth.js, nhưng ta gắn ở đây)
     const authForm = document.getElementById('authForm');
     if (authForm) {
         authForm.addEventListener('submit', handleAuth);
@@ -407,6 +426,8 @@ function initEventListeners() {
     // Quiz buttons
     const takeQuizBtn = document.getElementById('takeQuizBtn');
     const dailyQuizBtn = document.getElementById('dailyQuizBtn');
+    const startQuizNowBtn = document.getElementById('startQuizNowBtn');
+    const startQuizFromHistory = document.getElementById('startQuizFromHistory');
     
     if (takeQuizBtn) {
         takeQuizBtn.addEventListener('click', (e) => {
@@ -422,20 +443,42 @@ function initEventListeners() {
         });
     }
 
+    if (startQuizNowBtn) {
+        startQuizNowBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!authService.isAuthenticated()) {
+                toastr.warning('Vui lòng đăng nhập để làm quiz!');
+                openAuthModal(true);
+                return;
+            }
+            startQuiz();
+        });
+    }
+
+    if (startQuizFromHistory) {
+        startQuizFromHistory.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!authService.isAuthenticated()) {
+                toastr.warning('Vui lòng đăng nhập để làm quiz!');
+                openAuthModal(true);
+                return;
+            }
+            startQuiz();
+        });
+    }
+
     // Create post button
     const createPostBtn = document.getElementById('createPostBtn');
     if (createPostBtn) {
         createPostBtn.addEventListener('click', () => {
-            if (!appState.currentUser) {
-                if (typeof toastr !== 'undefined') {
-                    toastr.warning("Vui lòng đăng nhập!");
-                }
+            if (!authService.isAuthenticated()) {
+                toastr.warning('Vui lòng đăng nhập!');
                 openAuthModal(true);
                 return;
             }
             const modal = document.getElementById('createPostModal');
             if (modal) {
-                modal.style.display = "flex";
+                modal.style.display = 'flex';
                 modal.classList.add('show');
             }
         });
@@ -465,9 +508,7 @@ function initEventListeners() {
     const loadMoreActivities = document.getElementById('loadMoreActivities');
     if (loadMoreActivities) {
         loadMoreActivities.addEventListener('click', () => {
-            if (typeof toastr !== 'undefined') {
-                toastr.info("Tính năng đang phát triển!");
-            }
+            toastr.info('Tính năng đang phát triển!');
         });
     }
 
@@ -500,37 +541,31 @@ function initEventListeners() {
 
     if (joinForumBtn) {
         joinForumBtn.addEventListener('click', () => {
-            if (!appState.currentUser) {
-                if (typeof toastr !== 'undefined') {
-                    toastr.warning("Vui lòng đăng nhập!");
-                }
+            if (!authService.isAuthenticated()) {
+                toastr.warning('Vui lòng đăng nhập!');
                 openAuthModal(true);
                 return;
             }
-            switchSection("community-section");
+            switchSection('community-section');
         });
     }
 
     if (findGroupBtn) {
         findGroupBtn.addEventListener('click', () => {
-            if (typeof toastr !== 'undefined') {
-                toastr.info("Tính năng đang phát triển!");
-            }
+            toastr.info('Tính năng đang phát triển!');
         });
     }
 
     if (askQuestionBtn) {
         askQuestionBtn.addEventListener('click', () => {
-            if (!appState.currentUser) {
-                if (typeof toastr !== 'undefined') {
-                    toastr.warning("Vui lòng đăng nhập!");
-                }
+            if (!authService.isAuthenticated()) {
+                toastr.warning('Vui lòng đăng nhập!');
                 openAuthModal(true);
                 return;
             }
             const modal = document.getElementById('createPostModal');
             if (modal) {
-                modal.style.display = "flex";
+                modal.style.display = 'flex';
                 modal.classList.add('show');
             }
         });
@@ -539,71 +574,44 @@ function initEventListeners() {
     // Card click
     document.addEventListener('click', handleCardClick);
     
-    console.log("✅ Event listeners initialized");
+    console.log('✅ Event listeners initialized');
 }
 
 // =============================
 // CẬP NHẬT THỐNG KÊ
 // =============================
 function updateStats() {
-    // Số lượng sinh viên
     const studentCount = document.getElementById('studentCount');
-    if (studentCount) {
-        studentCount.textContent = '2,847';
-    }
+    if (studentCount) studentCount.textContent = '2,847';
     
-    // Quiz đã hoàn thành
     const quizCompletedCount = document.getElementById('quizCompletedCount');
-    if (quizCompletedCount) {
-        quizCompletedCount.textContent = '156';
-    }
+    if (quizCompletedCount) quizCompletedCount.textContent = '156';
     
-    // Quiz hoàn thành hôm nay
     const quizCompletedToday = document.getElementById('quizCompletedToday');
-    if (quizCompletedToday) {
-        quizCompletedToday.textContent = '42';
-    }
+    if (quizCompletedToday) quizCompletedToday.textContent = '42';
     
-    // Sự kiện Đã diễn ra
     const upcomingEvents = document.getElementById('upcomingEvents');
-    if (upcomingEvents) {
-        upcomingEvents.textContent = '8';
-    }
+    if (upcomingEvents) upcomingEvents.textContent = '8';
     
-    // Hiển thị tổng số câu hỏi (20 câu)
-    const totalQuestions = 20;    // Tổng số câu hỏi
-    
+    const totalQuestions = 20;
     const quizPercentage = document.getElementById('quizPercentage');
-    if (quizPercentage) {
-        quizPercentage.textContent = totalQuestions + ' câu hỏi';
-    }
+    if (quizPercentage) quizPercentage.textContent = totalQuestions + ' câu hỏi';
     
     const quizPercentage2 = document.getElementById('quizPercentage2');
-    if (quizPercentage2) {
-        quizPercentage2.textContent = totalQuestions + ' câu';
-    }
+    if (quizPercentage2) quizPercentage2.textContent = totalQuestions + ' câu';
     
-    // Ẩn thanh tiến độ nếu muốn
     const quizProgressBar = document.getElementById('quizProgressBar');
-    if (quizProgressBar) {
-        quizProgressBar.style.display = 'none';
-    }
+    if (quizProgressBar) quizProgressBar.style.display = 'none';
     
     const quizProgressBar2 = document.getElementById('quizProgressBar2');
-    if (quizProgressBar2) {
-        quizProgressBar2.style.display = 'none';
-    }
-    
-    // Hoặc giữ nguyên width nhưng không cần thiết
-    // const percentage = (completedQuestions / totalQuestions) * 100;
-    // quizProgressBar.style.width = percentage + '%';
+    if (quizProgressBar2) quizProgressBar2.style.display = 'none';
 }
 
 // =============================
 // KHỞI TẠO ỨNG DỤNG
 // =============================
 function initApp() {
-    console.log("🚀 Initializing StudyTogether app...");
+    console.log('🚀 Initializing StudyTogether app...');
 
     try {
         renderFeaturedContent();
@@ -614,26 +622,37 @@ function initApp() {
         renderQuizHistory();
         updateStats();
         
-        console.log("✅ Content rendered successfully");
+        console.log('✅ Content rendered successfully');
     } catch (error) {
-        console.error("❌ Error rendering content:", error);
+        console.error('❌ Error rendering content:', error);
     }
 
-    syncUserFromStorage();
+    // Đăng ký lắng nghe thay đổi auth
+    authService.subscribe((user) => {
+        updateUIForAuth(user);
+        updateProfileUI(); // Cập nhật profile nếu đang ở section profile
+    });
+
+    // Khởi tạo các thành phần UI
     initEventListeners();
     initUserDropdown();
     initNavigation();
+    
+    // Khởi tạo tính năng quên mật khẩu
+    initForgotPassword();
 
     // Khởi tạo quiz
     setTimeout(() => {
         initQuiz();
     }, 500);
 
+    // Chào mừng
     setTimeout(() => {
-        if (!appState.currentUser && typeof toastr !== 'undefined') {
-            toastr.info("👋 Chào mừng bạn đến với StudyTogether! Hãy đăng nhập để trải nghiệm đầy đủ tính năng.");
-        } else if (appState.currentUser && typeof toastr !== 'undefined') {
-            toastr.success(`🎉 Chào mừng ${appState.currentUser.name} quay trở lại!`);
+        const user = authService.getCurrentUser();
+        if (!user) {
+            toastr.info('👋 Chào mừng bạn đến với StudyTogether! Hãy đăng nhập để trải nghiệm đầy đủ tính năng.');
+        } else {
+            toastr.success(`🎉 Chào mừng ${user.username} quay trở lại!`);
         }
     }, 1500);
 }
@@ -648,8 +667,9 @@ if (document.readyState === 'loading') {
 }
 
 // Export functions ra window để debug
-window.syncUserFromStorage = syncUserFromStorage;
 window.appState = appState;
 window.viewPostDetail = loadPostDetail;
 window.openQuizSection = openQuizSection;
 window.renderQuizQuestions = renderQuizQuestions;
+window.closeAllModals = closeAllModals;
+window.updateProfileUI = updateProfileUI;

@@ -306,16 +306,67 @@
         <!-- Hồ sơ -->
         <section id="profile-section" class="content-section hidden-section">
             <div class="container">
-                <h2 class="section-title">Hồ sơ cá nhân</h2>
-
-                <div class="profile-card">
-                    <div class="profile-avatar">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
-                    <div class="profile-info">
-                        <p><strong>Tên đăng nhập:</strong> <span id="profileUsername">---</span></p>
-                        <p><strong>Email:</strong> <span id="profileEmail">---</span></p>
-                        <p><strong>Điểm tích lũy:</strong> <span id="profilePoints">0</span></p>
+                <div class="profile-container">
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <span class="avatar-icon" id="profileAvatar">U</span>
+                            </div>
+                            <h1>Hồ sơ cá nhân</h1>
+                            <span class="profile-badge" id="profileBadge">Thành viên</span>
+                        </div>
+                        
+                        <div class="profile-content">
+                            <div class="profile-item">
+                                <div class="item-icon">👤</div>
+                                <div class="item-details">
+                                    <div class="item-label">Tên đăng nhập</div>
+                                    <div class="item-value" id="profileUsername">---</div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="item-icon">📧</div>
+                                <div class="item-details">
+                                    <div class="item-label">Email</div>
+                                    <div class="item-value" id="profileEmail">---</div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="item-icon">⭐</div>
+                                <div class="item-details">
+                                    <div class="item-label">Điểm tích lũy</div>
+                                    <div class="points-display" id="profilePoints">
+                                        0 <span>điểm</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="rankStat">Bronze</div>
+                                <div class="stat-label">Hạng</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="joinDateStat">2024</div>
+                                <div class="stat-label">Tham gia</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="activityStat">0</div>
+                                <div class="stat-label">Quiz đã làm</div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-actions">
+                            <button class="btn" onclick="editProfile()">
+                                <span>Chỉnh sửa</span>
+                            </button>
+                            <button class="btn btn-outline" onclick="viewQuizHistory()">
+                                <span>Lịch sử</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -457,15 +508,21 @@
         };
     </script>
 
+    <!-- Load Auth Service trước -->
+    <script type="module" src="js/services/auth.service.js"></script>
+    <!-- App Loader (nằm cùng cấp với index.html) -->
+    <script type="module" src="./app-loader.js"></script>
+
+    <!-- Kiểm tra và chuyển hướng admin nếu cần -->
     <script type="module">
-        const token = localStorage.getItem("token");
-        const role = localStorage.getItem("role");
+        import { authService } from './js/services/auth.service.js';
 
-        if (token && role === "admin") {
-            window.location.href = "./app-v2/admin.html";
-        }
+        // Đăng ký lắng nghe thay đổi auth state
+        authService.subscribe((user) => {
+            if (user && user.role === 'admin') {
+                window.location.href = './app-v2/admin.html';
+            }
+        });
     </script>
-
-    <script type="module" src="js/modules/main.js"></script>
 </body>
 </html>

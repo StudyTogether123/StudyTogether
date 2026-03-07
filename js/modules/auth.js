@@ -1,34 +1,15 @@
-// auth.js
+// js/modules/auth.js
 import { appState } from './data.js';
-import { login, register } from '../api.js';
-
-/* ===============================
-   STORAGE SAFE
-================================= */
-function getStorage() {
-    try {
-        localStorage.setItem("__test", "1");
-        localStorage.removeItem("__test");
-        return localStorage;
-    } catch {
-        return sessionStorage;
-    }
-}
-
-const storage = getStorage();
+import { authService } from '../services/auth.service.js';
 
 /* ===============================
    BASE PATH (GitHub Safe)
 ================================= */
 function getBasePath() {
     const { pathname } = window.location;
-
-    // Nếu đang ở /StudyTogether/... trên GitHub
     if (pathname.includes("/StudyTogether/")) {
         return "/StudyTogether/";
     }
-
-    // Local
     return "/";
 }
 
@@ -96,44 +77,20 @@ export async function handleAuth(event) {
     }
 
     try {
-
-        /* ================= LOGIN ================= */
         if (appState.isLoginMode) {
-
-            let token = null;
-
-            try {
-                token = await login(username, password);
-            } catch (e) {
-                console.warn("API login failed → Demo mode");
-            }
-
-            if (!token) {
-                token = "demo-token-" + Date.now();
-            }
-
-            const role = username.toLowerCase() === "admin" ? "admin" : "user";
-
-            storage.setItem("token", token);
-            storage.setItem("username", username);
-            storage.setItem("role", role);
-
-            appState.currentUser = { name: username, role };
-
+            // Đăng nhập
+            await authService.login(username, password);
             toastr.success("Đăng nhập thành công!");
             closeAuthModal();
 
-            setTimeout(() => {
-                if (role === "admin") {
-                    redirect("app-v2/admin.html");
-                } else {
-                    redirect("index.html");
-                }
-            }, 500);
-        }
-
-        /* ================= REGISTER ================= */
-        else {
+            // Kiểm tra role để chuyển hướng admin
+            const user = authService.getCurrentUser();
+            if (user?.role === 'admin') {
+                redirect("app-v2/admin.html");
+            }
+            // Nếu là user thường, không cần redirect vì đang ở trang chính
+        } else {
+            // Đăng ký
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             if (!email) return toastr.error("Vui lòng nhập email!");
@@ -142,19 +99,14 @@ export async function handleAuth(event) {
             if (password.length < 6)
                 return toastr.error("Mật khẩu tối thiểu 6 ký tự!");
 
-            try {
-                await register(username, email, password);
-                toastr.success("Đăng ký thành công! Hãy đăng nhập.");
-                closeAuthModal();
-                setTimeout(() => openAuthModal(true), 300);
-            } catch {
-                toastr.error("Đăng ký thất bại!");
-            }
+            await authService.register(username, email, password);
+            toastr.success("Đăng ký thành công! Hãy đăng nhập.");
+            closeAuthModal();
+            setTimeout(() => openAuthModal(true), 300);
         }
-
     } catch (error) {
         console.error(error);
-        toastr.error("Có lỗi xảy ra!");
+        toastr.error(error.message || "Có lỗi xảy ra!");
     }
 }
 
@@ -162,18 +114,13 @@ export async function handleAuth(event) {
    AUTH CHECK
 ================================= */
 export function isAuthenticated() {
-    const token = storage.getItem("token");
-    const username = storage.getItem("username");
-    return !!(token && username);
+    return authService.isAuthenticated();
 }
 
 export function getCurrentUser() {
-    const token = storage.getItem("token");
-    const username = storage.getItem("username");
-    const role = storage.getItem("role");
-
-    if (token && username) {
-        return { name: username, role };
+    const user = authService.getCurrentUser();
+    if (user) {
+        return { name: user.username, role: user.role };
     }
     return null;
 }
@@ -182,15 +129,7 @@ export function getCurrentUser() {
    LOGOUT
 ================================= */
 export function logout() {
-    storage.removeItem("token");
-    storage.removeItem("username");
-    storage.removeItem("role");
-
-    appState.currentUser = null;
-
+    authService.logout();
     toastr.success("Đăng xuất thành công!");
-
-    setTimeout(() => {
-        redirect("index.html");
-    }, 500);
+    redirect("index.html");
 }

@@ -1,64 +1,14 @@
-// ===============================
-// BASE URL (FIX CỨNG BACKEND)
-// ===============================
+// js/api.js
+import { authService } from './services/auth.service.js';
+
 const API_BASE = "https://studytogether-backend.onrender.com/api";
 
-
-// ===============================
-// LOGIN
-// ===============================
-export async function login(username, password) {
-    const response = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ username, password })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-    }
-
-    // Lưu thông tin user
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("username", data.username);
-    localStorage.setItem("role", data.role);
-
-    return data;
-}
-
-
-// ===============================
-// REGISTER
-// ===============================
-export async function register(username, email, password) {
-    const response = await fetch(`${API_BASE}/auth/register`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ username, email, password })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.message || "Register failed");
-    }
-
-    return data;
-}
-
-
-// ===============================
-// FETCH CÓ TOKEN
-// ===============================
+/**
+ * Authorized fetch – tự động thêm token từ authService
+ */
 export async function authorizedFetch(endpoint, options = {}) {
-
-    const token = localStorage.getItem("token");
+    const user = authService.getCurrentUser();
+    const token = user?.token;
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
@@ -70,31 +20,56 @@ export async function authorizedFetch(endpoint, options = {}) {
     });
 
     if (response.status === 401) {
-        logout();
+        authService.logout();
         throw new Error("Session expired. Please login again.");
     }
 
     return response;
 }
 
+// ===============================
+// CÁC HÀM DƯỚI ĐÂY ĐƯỢC GIỮ LẠI ĐỂ TƯƠNG THÍCH VỚI CODE CŨ,
+// NHƯNG THỰC CHẤT CHỈ GỌI QUA authService.
+// KHUYẾN KHÍCH DÙNG authService TRỰC TIẾP.
+// ===============================
 
-// ===============================
-// LOGOUT
-// ===============================
-export function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    localStorage.removeItem("role");
+/**
+ * Đăng nhập
+ * @deprecated Dùng authService.login thay thế
+ */
+export async function login(username, password) {
+    console.warn('api.js login is deprecated, use authService.login instead');
+    return authService.login(username, password);
 }
 
+/**
+ * Đăng ký
+ * @deprecated Dùng authService.register thay thế
+ */
+export async function register(username, email, password) {
+    console.warn('api.js register is deprecated, use authService.register instead');
+    return authService.register(username, email, password);
+}
 
-// ===============================
-// GET USER HIỆN TẠI
-// ===============================
+/**
+ * Đăng xuất
+ * @deprecated Dùng authService.logout thay thế
+ */
+export function logout() {
+    console.warn('api.js logout is deprecated, use authService.logout instead');
+    authService.logout();
+}
+
+/**
+ * Lấy thông tin user hiện tại
+ * @deprecated Dùng authService.getCurrentUser thay thế
+ */
 export function getCurrentUser() {
-    return {
-        token: localStorage.getItem("token"),
-        username: localStorage.getItem("username"),
-        role: localStorage.getItem("role")
-    };
+    console.warn('api.js getCurrentUser is deprecated, use authService.getCurrentUser instead');
+    const user = authService.getCurrentUser();
+    return user ? {
+        token: user.token,
+        username: user.username,
+        role: user.role
+    } : null;
 }

@@ -1,6 +1,7 @@
 // ==========================================
 // APP LOADER - SAFE VERSION (V1 + V2)
 // ==========================================
+import { authService } from './js/services/auth.service.js';
 
 (function () {
     console.log("App Loader initialized");
@@ -29,32 +30,25 @@
 
 })();
 
-
 // ==========================================
 // LOAD MAIN APP (MODULE)
 // ==========================================
 function loadMainApp() {
-
-    // Tránh load 2 lần
     if (document.getElementById("app-main-script")) return;
 
     const script = document.createElement("script");
-
     script.id = "app-main-script";
-    script.type = "module";                  // ⭐ QUAN TRỌNG
-    script.src = "./js/modules/main.js";     // ĐÚNG PATH
+    script.type = "module";
+    script.src = "./js/modules/main.js";
     script.defer = true;
-
     document.body.appendChild(script);
 }
-
 
 // ==========================================
 // SETUP USER MENU + ROLE
 // ==========================================
 function setupUserUI() {
-
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = authService.getCurrentUser();
 
     const authButtons = document.getElementById("authButtons");
     const userMenu = document.getElementById("userMenu");
@@ -62,14 +56,14 @@ function setupUserUI() {
 
     if (!authButtons || !userMenu) return;
 
-    // ===== Nếu chưa login =====
+    // Nếu chưa đăng nhập
     if (!user) {
         authButtons.style.display = "flex";
         userMenu.style.display = "none";
         return;
     }
 
-    // ===== Nếu đã login =====
+    // Đã đăng nhập
     authButtons.style.display = "none";
     userMenu.style.display = "block";
 
@@ -77,18 +71,16 @@ function setupUserUI() {
         displayUsername.innerText = user.username || "User";
     }
 
-    // ===== Nếu là admin =====
+    // Nếu là admin, thêm nút Admin Panel
     if (user.role === "admin") {
         injectAdminButton();
     }
 }
 
-
 // ==========================================
 // THÊM NÚT ADMIN
 // ==========================================
 function injectAdminButton() {
-
     const dropdown = document.getElementById("dropdownMenu");
     if (!dropdown) return;
 
@@ -96,13 +88,11 @@ function injectAdminButton() {
     if (document.getElementById("adminPanelBtn")) return;
 
     const adminLink = document.createElement("a");
-
     adminLink.href = "./admin.html";
     adminLink.id = "adminPanelBtn";
     adminLink.innerHTML = `
         <i class="fas fa-shield-alt"></i>
         Admin Panel
     `;
-
     dropdown.insertBefore(adminLink, dropdown.firstChild);
 }
