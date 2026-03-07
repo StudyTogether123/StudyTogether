@@ -1,4 +1,7 @@
 // js/services/auth.service.js
+
+const API_BASE = "https://studytogether-backend.onrender.com/api";
+
 class AuthService {
     constructor() {
         this.storage = this._getStorage();
@@ -50,7 +53,7 @@ class AuthService {
     // Đăng nhập
     async login(username, password) {
         try {
-            const response = await fetch('https://studytogether-backend.onrender.com/api/auth/login', {
+            const response = await fetch(`${API_BASE}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
@@ -88,7 +91,7 @@ class AuthService {
 
     // Đăng ký
     async register(username, email, password) {
-        const response = await fetch('https://studytogether-backend.onrender.com/api/auth/register', {
+        const response = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password })
@@ -116,6 +119,52 @@ class AuthService {
             this.storage.setItem('points', newPoints);
             this._notify();
         }
+    }
+
+    // ===============================
+    // QUÊN MẬT KHẨU – OTP
+    // ===============================
+
+    /**
+     * Gửi yêu cầu quên mật khẩu (gửi OTP về email)
+     */
+    async forgotPassword(email) {
+        const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không thể gửi mã OTP');
+        return data;
+    }
+
+    /**
+     * Xác thực OTP
+     */
+    async verifyOtp(email, otp) {
+        const response = await fetch(`${API_BASE}/auth/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Mã OTP không hợp lệ');
+        return data; // trả về { success: true, token: "..." }
+    }
+
+    /**
+     * Đặt lại mật khẩu mới
+     */
+    async resetPassword(email, newPassword, token) {
+        const response = await fetch(`${API_BASE}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, newPassword, token })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Đặt lại mật khẩu thất bại');
+        return data;
     }
 
     // --- Observer methods ---
@@ -153,3 +202,6 @@ class AuthService {
 }
 
 export const authService = new AuthService();
+
+// Đặt service lên window để app-loader có thể truy cập (nếu cần)
+window.authService = authService;
