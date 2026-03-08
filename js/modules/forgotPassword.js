@@ -3,7 +3,6 @@ import { authService } from '../services/auth.service.js';
 import { openAuthModal } from './auth.js';
 
 let currentEmail = '';
-let otpToken = '';
 let timerInterval = null;
 
 /* ===============================
@@ -178,9 +177,8 @@ async function handleVerifyOtp(e) {
 
     try {
         console.log('   Calling authService.verifyOtp with email:', currentEmail, 'otp:', otp);
-        const result = await authService.verifyOtp(currentEmail, otp);
-        otpToken = result.token || '';
-        console.log('✅ OTP verification successful, token:', otpToken);
+        await authService.verifyOtp(currentEmail, otp); // Không cần lưu token
+        console.log('✅ OTP verification successful');
         toastr.success('Xác thực thành công!');
         closeAllModals();
         openResetPasswordModal();
@@ -219,8 +217,8 @@ async function handleResetPassword(e) {
         return;
     }
 
-    if (!currentEmail || !otpToken) {
-        console.error('❌ No current email or otpToken', { currentEmail, otpToken });
+    if (!currentEmail) {
+        console.error('❌ No current email');
         toastr.error('Phiên làm việc không hợp lệ. Vui lòng thử lại.');
         closeAllModals();
         openForgotPasswordModal();
@@ -228,14 +226,13 @@ async function handleResetPassword(e) {
     }
 
     try {
-        console.log('   Calling authService.resetPassword with email:', currentEmail, 'token:', otpToken);
-        await authService.resetPassword(currentEmail, newPassword, otpToken);
+        console.log('   Calling authService.resetPassword with email:', currentEmail);
+        await authService.resetPassword(currentEmail, newPassword); // Không có token
         console.log('✅ Reset password successful');
         toastr.success('Đổi mật khẩu thành công! Hãy đăng nhập lại.');
         closeAllModals();
         openAuthModal(true);
-        currentEmail = '';
-        otpToken = '';
+        currentEmail = ''; // Reset biến
     } catch (error) {
         console.error('❌ Reset password error:', error);
         toastr.error(error.message || 'Đổi mật khẩu thất bại');

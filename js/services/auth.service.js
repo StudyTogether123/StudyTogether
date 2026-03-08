@@ -158,14 +158,14 @@ class AuthService {
     }
 
     /**
-     * Đặt lại mật khẩu mới
+     * Đặt lại mật khẩu mới (không cần token)
      */
-    async resetPassword(email, newPassword, token) {
-        console.log('🔐 AuthService.resetPassword called with email:', email, 'token:', token);
+    async resetPassword(email, newPassword) {
+        console.log('🔐 AuthService.resetPassword called with email:', email);
         const response = await fetch(`${API_BASE}/auth/reset-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, newPassword, token })
+            body: JSON.stringify({ email, newPassword })
         });
         const data = await response.json();
         console.log('   Response:', data);
