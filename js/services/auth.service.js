@@ -129,12 +129,14 @@ class AuthService {
      * Gửi yêu cầu quên mật khẩu (gửi OTP về email)
      */
     async forgotPassword(email) {
+        console.log('🔐 AuthService.forgotPassword called with email:', email);
         const response = await fetch(`${API_BASE}/auth/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         });
         const data = await response.json();
+        console.log('   Response:', data);
         if (!response.ok) throw new Error(data.message || 'Không thể gửi mã OTP');
         return data;
     }
@@ -143,12 +145,14 @@ class AuthService {
      * Xác thực OTP
      */
     async verifyOtp(email, otp) {
+        console.log('🔐 AuthService.verifyOtp called with email:', email, 'otp:', otp);
         const response = await fetch(`${API_BASE}/auth/verify-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, otp })
         });
         const data = await response.json();
+        console.log('   Response:', data);
         if (!response.ok) throw new Error(data.message || 'Mã OTP không hợp lệ');
         return data; // trả về { success: true, token: "..." }
     }
@@ -157,12 +161,14 @@ class AuthService {
      * Đặt lại mật khẩu mới
      */
     async resetPassword(email, newPassword, token) {
+        console.log('🔐 AuthService.resetPassword called with email:', email, 'token:', token);
         const response = await fetch(`${API_BASE}/auth/reset-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, newPassword, token })
         });
         const data = await response.json();
+        console.log('   Response:', data);
         if (!response.ok) throw new Error(data.message || 'Đặt lại mật khẩu thất bại');
         return data;
     }
