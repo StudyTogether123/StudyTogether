@@ -215,8 +215,16 @@ async function handleSubmit(e) {
     try {
         let result;
         if (currentQuiz) {
-            // Nộp bài lên server
-            result = await quizService.submitQuiz(currentQuiz.id, currentQuizAnswers, 0);
+            // Chuyển đổi answers từ index sang nội dung
+            const answersToSend = {};
+            currentQuiz.questions.forEach((q, idx) => {
+                const qId = q.id || `q${idx + 1}`;
+                const answerIndex = currentQuizAnswers[qId];
+                if (answerIndex !== undefined && q.options && q.options[answerIndex]) {
+                    answersToSend[qId] = q.options[answerIndex];
+                }
+            });
+            result = await quizService.submitQuiz(currentQuiz.id, answersToSend, 0);
             // Cập nhật điểm
             const user = authService.getCurrentUser();
             if (user) {
@@ -224,7 +232,7 @@ async function handleSubmit(e) {
                 authService.updatePoints(newPoints);
             }
         } else {
-            // Nộp bài trong postDetail (dùng sampleData) – tính điểm local
+            // Nộp bài trong postDetail (dùng sampleData) – tính điểm local với index
             let score = 0;
             quiz.questions.forEach((q, index) => {
                 const questionId = q.id || `q${index + 1}`;
@@ -361,7 +369,7 @@ export async function fetchAndRenderQuizHistory() {
                     ${history.map(item => `
                         <tr>
                             <td>${new Date(item.completedAt).toLocaleDateString('vi-VN')}</td>
-                            <td>${item.quiz?.title || 'Quiz'}</td>
+                            <td>${item.quizTitle || 'Quiz'}</td>
                             <td>${item.score}/${item.totalQuestions}</td>
                             <td>${item.score * 10}</td>
                         </tr>
