@@ -1,116 +1,99 @@
 // js/modules/quiz.js
-import { sampleData, appState } from './data.js';
-import { renderQuizHistory } from './ui.js';
-import { authService } from '../services/auth.service.js'; // THÊM IMPORT
+import { quizService } from '../services/quiz.service.js';
+import { authService } from '../services/auth.service.js';
+import { sampleData } from './data.js'; // Cần cho postDetail
 
-/* ===============================
-   KIỂM TRA DỮ LIỆU
-================================= */
-function validateQuizData() {
-    if (!sampleData?.dailyQuiz?.questions?.length) {
-        return { valid: false, message: 'Chưa có câu hỏi nào' };
-    }
-    return { valid: true, data: sampleData.dailyQuiz };
-}
+let currentQuiz = null;               // Quiz đang làm
+let currentQuizAnswers = {};           // Đáp án người dùng chọn
+let timerInterval = null;              // Đồng hồ (nếu có)
 
 /* ===============================
    BẮT ĐẦU LÀM QUIZ
 ================================= */
-export function startQuiz() {
+export async function startQuiz() {
     console.log('🚀 Bắt đầu làm quiz');
-    
-    const quizQuestions = document.getElementById('quizQuestions');
-    const quizResult = document.getElementById('quizResult');
-    const startBtn = document.getElementById('startQuizNowBtn');
-    const submitBtn = document.getElementById('submitQuizBtn');
-    
-    if (quizQuestions) {
-        quizQuestions.style.display = 'block';
-        quizQuestions.classList.add('fade-in');
-        
-        setTimeout(() => {
-            quizQuestions.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+
+    try {
+        currentQuiz = await quizService.getDailyQuiz();
+        if (!currentQuiz) {
+            toastr.error('Không có quiz hôm nay!');
+            return;
+        }
+
+        currentQuizAnswers = {};
+
+        const quizQuestions = document.getElementById('quizQuestions');
+        const quizResult = document.getElementById('quizResult');
+        const startBtn = document.getElementById('startQuizNowBtn');
+        const submitBtn = document.getElementById('submitQuizBtn');
+
+        if (quizQuestions) {
+            quizQuestions.style.display = 'block';
+            quizQuestions.classList.add('fade-in');
+            setTimeout(() => quizQuestions.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+        }
+        if (quizResult) quizResult.style.display = 'none';
+        if (startBtn) startBtn.style.display = 'none';
+        if (submitBtn) {
+            submitBtn.style.display = 'inline-block';
+            submitBtn.classList.remove('pulse-animation');
+        }
+
+        renderQuizQuestions();
+    } catch (error) {
+        console.error('❌ Lỗi khi lấy quiz:', error);
+        toastr.error('Không thể tải quiz. Vui lòng thử lại sau.');
     }
-    
-    if (quizResult) {
-        quizResult.style.display = 'none';
-    }
-    
-    if (startBtn) {
-        startBtn.style.display = 'none';
-    }
-    
-    if (submitBtn) {
-        submitBtn.style.display = 'inline-block';
-        submitBtn.classList.remove('pulse-animation');
-    }
-    
-    renderQuizQuestions();
 }
 
 /* ===============================
-   ĐÓNG QUIZ VÀ QUAY LẠI
+   ĐÓNG QUIZ
 ================================= */
 export function closeQuiz() {
     console.log('🔚 Đóng quiz');
-    
     const quizQuestions = document.getElementById('quizQuestions');
     const quizResult = document.getElementById('quizResult');
     const startBtn = document.getElementById('startQuizNowBtn');
     const submitBtn = document.getElementById('submitQuizBtn');
     const closeBtn = document.getElementById('closeQuizResultBtn');
-    
+
     if (quizQuestions) quizQuestions.style.display = 'none';
     if (quizResult) quizResult.style.display = 'none';
     if (startBtn) startBtn.style.display = 'inline-flex';
     if (submitBtn) submitBtn.style.display = 'none';
     if (closeBtn) closeBtn.style.display = 'none';
-    
-    resetQuizAnswers();
+
+    currentQuiz = null;
+    currentQuizAnswers = {};
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
 }
 
 /* ===============================
-   HIỂN THỊ CÂU HỎI QUIZ
+   HIỂN THỊ CÂU HỎI QUIZ (dùng cho cả quiz chính và postDetail)
 ================================= */
 export function renderQuizQuestions() {
-    console.log('%c=== RENDER QUIZ QUESTIONS ===', 'color: #4361ee; font-weight: bold');
-    
+    // Nếu có currentQuiz (quiz chính) thì dùng, nếu không thì dùng sampleData (cho postDetail)
+    const quiz = currentQuiz || sampleData?.dailyQuiz;
+    if (!quiz) {
+        console.error('Không có dữ liệu quiz');
+        return;
+    }
+    renderQuizQuestionsFromData(quiz);
+}
+
+function renderQuizQuestionsFromData(quiz) {
     const container = document.getElementById('quizQuestions');
-    if (!container) {
-        console.error('❌ Không tìm thấy element #quizQuestions');
-        return;
-    }
+    if (!container || !quiz) return;
 
-    appState.currentQuizAnswers = {};
-
-    const validation = validateQuizData();
-    if (!validation.valid) {
-        container.innerHTML = `
-            <div class="quiz-empty-state">
-                <i class="fas fa-question-circle"></i>
-                <h3>${validation.message}</h3>
-                <p>Vui lòng quay lại sau để làm quiz nhé!</p>
-                <button class="btn btn-outline" id="backToQuizMenuBtn">
-                    <i class="fas fa-arrow-left"></i> Quay lại
-                </button>
-            </div>
-        `;
-        
-        const backBtn = document.getElementById('backToQuizMenuBtn');
-        if (backBtn) backBtn.addEventListener('click', closeQuiz);
-        return;
-    }
-
-    const quiz = validation.data;
-    const questions = quiz.questions;
+    const questions = quiz.questions || [];
     const totalQuestions = questions.length;
 
     let questionsHtml = '';
-    
     questions.forEach((q, index) => {
         const questionId = q.id || `q${index + 1}`;
-        
         let optionsHtml = '';
         if (q.options && Array.isArray(q.options)) {
             q.options.forEach((option, optIndex) => {
@@ -123,13 +106,12 @@ export function renderQuizQuestions() {
                 `;
             });
         }
-
         questionsHtml += `
             <div class="quiz-question-card" data-id="${questionId}">
                 <div class="question-header">
                     <span class="question-number">Câu ${index + 1}/${totalQuestions}</span>
                 </div>
-                <h3 class="question-title">${q.question || 'Không có câu hỏi'}</h3>
+                <h3 class="question-title">${q.content || q.question || ''}</h3>
                 <div class="quiz-options-container">
                     ${optionsHtml}
                 </div>
@@ -140,7 +122,7 @@ export function renderQuizQuestions() {
     container.innerHTML = `
         <div class="quiz-header">
             <div class="quiz-header-top">
-                <h2 class="quiz-main-title">${quiz.title || 'Quiz hàng ngày'}</h2>
+                <h2 class="quiz-main-title">${quiz.title || 'Quiz'}</h2>
                 <button class="btn-close-quiz" id="closeQuizBtn">
                     <i class="fas fa-times"></i>
                 </button>
@@ -157,15 +139,9 @@ export function renderQuizQuestions() {
     `;
 
     attachQuizEvents();
-    
+
     const closeQuizBtn = document.getElementById('closeQuizBtn');
     if (closeQuizBtn) closeQuizBtn.addEventListener('click', closeQuiz);
-    
-    const submitBtn = document.getElementById('submitQuizBtn');
-    if (submitBtn) {
-        submitBtn.style.display = 'inline-block';
-        submitBtn.classList.remove('pulse-animation');
-    }
 }
 
 /* ===============================
@@ -181,22 +157,7 @@ function attachQuizEvents() {
     const submitBtn = document.getElementById('submitQuizBtn');
     if (submitBtn && !submitBtn.hasAttribute('data-listener')) {
         submitBtn.setAttribute('data-listener', 'true');
-        submitBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const result = showQuizResult();
-            if (result) {
-                updateStatsAfterQuiz(result);
-            }
-        });
-    }
-
-    const closeResultBtn = document.getElementById('closeQuizResultBtn');
-    if (closeResultBtn && !closeResultBtn.hasAttribute('data-listener')) {
-        closeResultBtn.setAttribute('data-listener', 'true');
-        closeResultBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeQuiz();
-        });
+        submitBtn.addEventListener('click', handleSubmit);
     }
 }
 
@@ -214,129 +175,109 @@ function handleQuizOptionClick(e) {
     element.classList.add('selected');
     element.style.animation = 'optionPulse 0.3s ease';
 
-    appState.currentQuizAnswers[questionId] = answerId;
+    currentQuizAnswers[questionId] = answerId;
 
-    const validation = validateQuizData();
-    if (validation.valid) {
-        const totalQuestions = validation.data.questions.length;
-        const answeredCount = Object.keys(appState.currentQuizAnswers).length;
-        
-        const submitBtn = document.getElementById('submitQuizBtn');
-        if (submitBtn) {
-            if (answeredCount === totalQuestions) {
-                submitBtn.classList.add('pulse-animation');
-            } else {
-                submitBtn.classList.remove('pulse-animation');
-            }
+    const totalQuestions = (currentQuiz || sampleData?.dailyQuiz)?.questions?.length || 0;
+    const answeredCount = Object.keys(currentQuizAnswers).length;
+    const submitBtn = document.getElementById('submitQuizBtn');
+    if (submitBtn) {
+        if (answeredCount === totalQuestions) {
+            submitBtn.classList.add('pulse-animation');
+        } else {
+            submitBtn.classList.remove('pulse-animation');
         }
     }
 }
 
 /* ===============================
-   TÍNH ĐIỂM
+   XỬ LÝ NỘP BÀI
 ================================= */
-function calculateQuizScore() {
-    const validation = validateQuizData();
-    if (!validation.valid) {
-        return { score: 0, total: 0, percentage: 0 };
+async function handleSubmit(e) {
+    e.preventDefault();
+
+    const quiz = currentQuiz || sampleData?.dailyQuiz;
+    if (!quiz) {
+        toastr.error('Không có quiz nào đang làm!');
+        return;
     }
-    
-    const questions = validation.data.questions;
-    const totalQuestions = questions.length;
-    let score = 0;
 
-    questions.forEach((q, index) => {
-        const questionId = q.id || `q${index + 1}`;
-        const userAnswer = appState.currentQuizAnswers[questionId];
-        
-        if (userAnswer !== undefined && userAnswer === q.correctAnswer) {
-            score++;
+    const totalQuestions = quiz.questions?.length || 0;
+    if (Object.keys(currentQuizAnswers).length < totalQuestions) {
+        toastr.warning(`Bạn còn ${totalQuestions - Object.keys(currentQuizAnswers).length} câu chưa trả lời!`);
+        return;
+    }
+
+    const submitBtn = e.currentTarget;
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang nộp...';
+    submitBtn.disabled = true;
+
+    try {
+        let result;
+        if (currentQuiz) {
+            // Nộp bài lên server
+            result = await quizService.submitQuiz(currentQuiz.id, currentQuizAnswers, 0);
+            // Cập nhật điểm
+            const user = authService.getCurrentUser();
+            if (user) {
+                const newPoints = (user.points || 0) + (result.pointsEarned || 0);
+                authService.updatePoints(newPoints);
+            }
+        } else {
+            // Nộp bài trong postDetail (dùng sampleData) – tính điểm local
+            let score = 0;
+            quiz.questions.forEach((q, index) => {
+                const questionId = q.id || `q${index + 1}`;
+                const userAnswer = currentQuizAnswers[questionId];
+                if (userAnswer !== undefined && userAnswer === q.correctAnswer) {
+                    score++;
+                }
+            });
+            result = {
+                score,
+                totalQuestions: quiz.questions.length,
+                percentage: Math.round((score / quiz.questions.length) * 100),
+                pointsEarned: score * 10
+            };
         }
-    });
 
-    return {
-        score,
-        total: totalQuestions,
-        percentage: totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0
-    };
+        showQuizResult(result);
+        toastr.success(`✅ Bạn đã đạt ${result.score}/${result.totalQuestions} điểm! (+${result.pointsEarned} điểm)`);
+    } catch (error) {
+        console.error('❌ Lỗi khi nộp bài:', error);
+        toastr.error(error.message || 'Nộp bài thất bại. Vui lòng thử lại.');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
 }
 
 /* ===============================
    HIỂN THỊ KẾT QUẢ
 ================================= */
-export function showQuizResult() {
-    if (Object.keys(appState.currentQuizAnswers).length === 0) {
-        showNotification('Bạn chưa trả lời câu nào!', 'warning');
-        return null;
-    }
-    
-    const result = calculateQuizScore();
+export function showQuizResult(result) {
     const container = document.getElementById('quizResult');
     const submitBtn = document.getElementById('submitQuizBtn');
-    
-    if (!container) return null;
+    if (!container) return;
 
     if (submitBtn) submitBtn.style.display = 'none';
+
+    const percentage = result.percentage || Math.round((result.score / result.totalQuestions) * 100);
+    const pointsEarned = result.pointsEarned || result.score * 10;
 
     let resultHtml = `
         <div class="quiz-result-container">
             <div class="result-header">
                 <h2>Kết quả của bạn</h2>
-                <div class="score-circle ${getScoreClass(result.percentage)}">
+                <div class="score-circle ${getScoreClass(percentage)}">
                     <span class="score-number">${result.score}</span>
-                    <span class="score-total">/${result.total}</span>
+                    <span class="score-total">/${result.totalQuestions}</span>
                 </div>
-                <div class="score-percentage">${result.percentage}%</div>
+                <div class="score-percentage">${percentage}%</div>
                 <div class="score-points">
                     <i class="fas fa-star"></i>
-                    +${result.score * 10} điểm
+                    +${pointsEarned} điểm
                 </div>
-            </div>
-            
-            <div class="result-details">
-                <h3>Chi tiết câu trả lời</h3>
-    `;
-
-    const validation = validateQuizData();
-    if (validation.valid) {
-        validation.data.questions.forEach((q, index) => {
-            const questionId = q.id || `q${index + 1}`;
-            const isCorrect = appState.currentQuizAnswers[questionId] === q.correctAnswer;
-            
-            let userAnswer = "Chưa trả lời";
-            if (appState.currentQuizAnswers[questionId] !== undefined && q.options) {
-                userAnswer = q.options[appState.currentQuizAnswers[questionId]] || "Không xác định";
-            }
-            
-            const correctAnswer = q.options?.[q.correctAnswer] || "Không xác định";
-
-            resultHtml += `
-                <div class="result-item ${isCorrect ? 'correct' : 'incorrect'}">
-                    <div class="result-question">
-                        <span class="result-number">Câu ${index + 1}</span>
-                        <span class="result-icon">
-                            <i class="fas ${isCorrect ? 'fa-check-circle' : 'fa-times-circle'}"></i>
-                        </span>
-                    </div>
-                    <p class="result-question-text">${q.question || ''}</p>
-                    <div class="result-answers">
-                        <div class="user-answer">
-                            <span class="label">Bạn chọn:</span>
-                            <span class="value">${userAnswer}</span>
-                        </div>
-                        ${!isCorrect ? `
-                            <div class="correct-answer">
-                                <span class="label">Đáp án đúng:</span>
-                                <span class="value">${correctAnswer}</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    resultHtml += `
             </div>
             <div class="result-actions">
                 <button class="btn btn-outline" id="backToQuizMenuBtn">
@@ -348,12 +289,12 @@ export function showQuizResult() {
             </div>
         </div>
     `;
-    
+
     container.innerHTML = resultHtml;
-    
+
     const backBtn = document.getElementById('backToQuizMenuBtn');
     if (backBtn) backBtn.addEventListener('click', closeQuiz);
-    
+
     const retryBtn = document.getElementById('retryQuizBtn');
     if (retryBtn) {
         retryBtn.addEventListener('click', () => {
@@ -361,89 +302,81 @@ export function showQuizResult() {
             renderQuizQuestions();
         });
     }
-    
+
     container.style.display = 'block';
     container.classList.add('fade-in');
-
-    return result;
 }
 
 /* ===============================
    RESET QUIZ
 ================================= */
 export function resetQuizAnswers() {
-    appState.currentQuizAnswers = {};
-    
+    currentQuizAnswers = {};
     const submitBtn = document.getElementById('submitQuizBtn');
     if (submitBtn) {
         submitBtn.style.display = 'inline-block';
         submitBtn.classList.remove('pulse-animation');
     }
-    
     document.querySelectorAll('.quiz-option').forEach(opt => {
         opt.classList.remove('selected');
     });
 }
 
 /* ===============================
-   CẬP NHẬT THỐNG KÊ
+   CẬP NHẬT THỐNG KÊ (cho postDetail)
 ================================= */
 export function updateStatsAfterQuiz(result) {
-    if (!result || result.score <= 0) return;
+    // Hàm này dành cho postDetail, chỉ log hoặc cập nhật gì đó nếu cần
+    console.log('updateStatsAfterQuiz called with result:', result);
+    // Có thể thêm thông báo
+    toastr.success(`Bạn đã đạt ${result.score}/${result.totalQuestions} điểm!`);
+}
 
-    // Cập nhật số người đã làm hôm nay (UI thống kê)
-    const quizCompletedToday = document.getElementById('quizCompletedToday');
-    if (quizCompletedToday) {
-        let currentCompleted = parseInt(quizCompletedToday.textContent) || 0;
-        currentCompleted += 1;
-        quizCompletedToday.textContent = currentCompleted;
-    }
+/* ===============================
+   LẤY LỊCH SỬ QUIZ
+================================= */
+export async function fetchAndRenderQuizHistory() {
+    const container = document.getElementById('quiz-history');
+    if (!container) return;
 
-    // Tính điểm vừa đạt được
-    const pointsEarned = result.score * 10;
+    try {
+        const history = await quizService.getQuizHistory();
 
-    // Cập nhật điểm qua authService
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-        const newPoints = (currentUser.points || 0) + pointsEarned;
-        authService.updatePoints(newPoints);
-    }
+        if (!history || history.length === 0) {
+            container.innerHTML = '<p class="empty-state">Bạn chưa tham gia quiz nào.</p>';
+            return;
+        }
 
-    // Lưu lịch sử quiz vào sampleData (demo)
-    if (!sampleData.quizHistory) sampleData.quizHistory = [];
-
-    const today = new Date();
-    const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-
-    sampleData.quizHistory.unshift({
-        id: Date.now(),
-        date: dateStr,
-        topic: sampleData.dailyQuiz?.title || 'Quiz hàng ngày',
-        score: `${result.score}/${result.total}`,
-        points: pointsEarned,
-        percentage: result.percentage
-    });
-
-    // Giới hạn lịch sử 10 item
-    if (sampleData.quizHistory.length > 10) {
-        sampleData.quizHistory.pop();
-    }
-    
-    // Cập nhật hiển thị lịch sử
-    const quizHistoryContainer = document.getElementById('quiz-history');
-    if (quizHistoryContainer && typeof renderQuizHistory === 'function') {
-        renderQuizHistory();
-        showNotification(`Bạn đã nhận được ${pointsEarned} điểm!`, 'success');
-    }
-
-    // Đồng thời cập nhật appState.currentUser.points nếu vẫn dùng (tùy chọn)
-    if (appState.currentUser) {
-        appState.currentUser.points = (parseInt(appState.currentUser.points) || 0) + pointsEarned;
+        container.innerHTML = `
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Chủ đề</th>
+                        <th>Điểm</th>
+                        <th>Điểm nhận được</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${history.map(item => `
+                        <tr>
+                            <td>${new Date(item.completedAt).toLocaleDateString('vi-VN')}</td>
+                            <td>${item.quiz?.title || 'Quiz'}</td>
+                            <td>${item.score}/${item.totalQuestions}</td>
+                            <td>${item.score * 10}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        console.error('❌ Lỗi khi lấy lịch sử quiz:', error);
+        container.innerHTML = '<p class="error-message">Không thể tải lịch sử. Vui lòng thử lại sau.</p>';
     }
 }
 
 /* ===============================
-   HELPER FUNCTIONS
+   HELPER
 ================================= */
 function getScoreClass(percentage) {
     if (percentage >= 80) return 'excellent';
@@ -452,75 +385,35 @@ function getScoreClass(percentage) {
     return 'poor';
 }
 
-function showNotification(message, type = 'info') {
-    if (window.toastr) {
-        toastr[type](message);
-    } else {
-        alert(message);
-    }
-}
-
 /* ===============================
    KHỞI TẠO QUIZ
 ================================= */
 export function initQuiz() {
     console.log('%c=== INITIALIZING QUIZ ===', 'color: #4361ee; font-weight: bold');
-    
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupQuiz);
-    } else {
-        setupQuiz();
-    }
-}
 
-function setupQuiz() {
     const startQuizNowBtn = document.getElementById('startQuizNowBtn');
     if (startQuizNowBtn) {
-        startQuizNowBtn.addEventListener('click', (e) => {
+        startQuizNowBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            
             if (!authService.isAuthenticated()) {
-                showNotification('Vui lòng đăng nhập để làm quiz!', 'warning');
+                toastr.warning('Vui lòng đăng nhập để làm quiz!');
                 if (window.openAuthModal) window.openAuthModal(true);
                 return;
             }
-            
-            startQuiz();
+            await startQuiz();
         });
     }
-    
+
     const refreshHistoryBtn = document.getElementById('refreshQuizHistoryBtn');
     if (refreshHistoryBtn) {
         refreshHistoryBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (typeof renderQuizHistory === 'function') {
-                renderQuizHistory();
-                showNotification('Đã làm mới lịch sử quiz!', 'success');
-            }
+            fetchAndRenderQuizHistory();
         });
     }
-    
-    const submitBtn = document.getElementById('submitQuizBtn');
-    if (submitBtn) {
-        const newSubmitBtn = submitBtn.cloneNode(true);
-        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
-        
-        newSubmitBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const result = showQuizResult();
-            if (result) updateStatsAfterQuiz(result);
-        });
-    }
-    
-    const closeBtn = document.getElementById('closeQuizResultBtn');
-    if (closeBtn) {
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-        
-        newCloseBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeQuiz();
-        });
+
+    if (!document.getElementById('quiz-section')?.classList.contains('hidden-section')) {
+        fetchAndRenderQuizHistory();
     }
 }
 
@@ -531,5 +424,6 @@ export default {
     initQuiz,
     updateStatsAfterQuiz,
     startQuiz,
-    closeQuiz
+    closeQuiz,
+    fetchAndRenderQuizHistory
 };

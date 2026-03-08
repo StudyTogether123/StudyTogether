@@ -1,5 +1,7 @@
+// js/modules/ui.js
 import { sampleData } from './data.js';
 import { loadPostDetail } from './postDetail.js';
+import { quizService } from '../services/quiz.service.js'; // Import quizService
 
 /* =====================================================
    UTIL RENDER
@@ -31,7 +33,6 @@ export function createContentCard(content, isKnowledge = false) {
             ? content.description.substring(0, 120) + '...'
             : content.description;
 
-    // Đảm bảo id là số
     const cardId = content.id;
     console.log(`Creating card with ID: ${cardId} (${typeof cardId})`);
 
@@ -83,7 +84,6 @@ function enableContentCardClick(container) {
         card.classList.add('card-clicked');
         setTimeout(() => card.classList.remove('card-clicked'), 150);
 
-        // Gọi trực tiếp loadPostDetail
         loadPostDetail(id);
     });
 }
@@ -192,11 +192,7 @@ export function createForumPost(post) {
 /* =====================================================
    RENDER FUNCTIONS
 =====================================================*/
-/* =====================================================
-   RENDER FUNCTIONS
-=====================================================*/
 export function renderFeaturedContent() {
-    // Nếu không có featuredContent riêng thì lấy 3 bài từ knowledgeContent
     const featuredData = sampleData.featuredContent?.length 
         ? sampleData.featuredContent 
         : sampleData.knowledgeContent.slice(0, 3);
@@ -204,7 +200,7 @@ export function renderFeaturedContent() {
     renderList(
         'featured-content',
         featuredData,
-        item => createContentCard(item), // Không cần isKnowledge = true vì featured content hiển thị đơn giản hơn
+        item => createContentCard(item),
         enableContentCardClick
     );
 }
@@ -213,7 +209,7 @@ export function renderKnowledgeContent() {
     renderList(
         'knowledge-content',
         sampleData.knowledgeContent,
-        item => createContentCard(item, true), // true để hiển thị mô tả dài hơn
+        item => createContentCard(item, true),
         enableContentCardClick
     );
 }
@@ -234,51 +230,63 @@ export function renderForumPosts() {
     );
 }
 
-
 /* =====================================================
-   RANKING
+   RANKING - Gọi API từ backend
 =====================================================*/
-export function renderRankings(type = 'weekly') {
-
+export async function renderRankings(type = 'weekly') {
     const container = document.getElementById('ranking-content');
     if (!container) return;
 
-    const rankings =
-        type === 'weekly'
-            ? sampleData.rankings.weekly
-            : sampleData.rankings.monthly;
+    // Hiển thị loading
+    container.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>';
 
-    container.innerHTML = `
-        <table class="ranking-table">
-            <thead>
-                <tr>
-                    <th>Hạng</th>
-                    <th>Tên sinh viên</th>
-                    <th>Khoa</th>
-                    <th>Điểm</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${rankings.map(item => `
+    try {
+        // Gọi API lấy leaderboard (mặc định là tổng điểm, có thể phân loại sau)
+        const leaderboard = await quizService.getLeaderboard();
+        
+        if (!leaderboard || leaderboard.length === 0) {
+            container.innerHTML = '<p class="empty-state">Chưa có dữ liệu xếp hạng.</p>';
+            return;
+        }
+
+        // Tạo HTML cho bảng xếp hạng
+        const tableHtml = `
+            <table class="ranking-table">
+                <thead>
                     <tr>
-                        <td class="rank rank-${item.rank}">
-                            ${item.rank}
-                        </td>
-                        <td>${item.name}</td>
-                        <td>${item.faculty}</td>
-                        <td>${item.points.toLocaleString()}</td>
+                        <th>Hạng</th>
+                        <th>Tên sinh viên</th>
+                        <th>Điểm</th>
+                        <th>Số quiz đã làm</th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
+                </thead>
+                <tbody>
+                    ${leaderboard.map((item, index) => {
+                        const rank = index + 1;
+                        return `
+                            <tr>
+                                <td class="rank ${rank <= 3 ? `rank-${rank}` : ''}">${rank}</td>
+                                <td>${item.fullName || item.username}</td>
+                                <td>${item.totalPoints.toLocaleString()}</td>
+                                <td>${item.quizCount}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+
+        container.innerHTML = tableHtml;
+    } catch (error) {
+        console.error('❌ Error loading leaderboard:', error);
+        container.innerHTML = '<p class="empty-state">Không thể tải bảng xếp hạng. Vui lòng thử lại sau.</p>';
+    }
 }
 
 /* =====================================================
-   QUIZ HISTORY
+   QUIZ HISTORY (có thể sau này cũng gọi API)
 =====================================================*/
 export function renderQuizHistory() {
-
     const container = document.getElementById('quiz-history');
     if (!container) return;
 
@@ -315,20 +323,17 @@ export function renderQuizHistory() {
 }
 
 /* =====================================================
-   COUNTER ANIMATION – MƯỢT HƠN
+   COUNTER ANIMATION
 =====================================================*/
 export function animateCounter(elementId, targetValue, duration = 2000) {
-
     const element = document.getElementById(elementId);
     if (!element) return;
 
     const startTime = performance.now();
 
     function update(currentTime) {
-
         const progress = Math.min((currentTime - startTime) / duration, 1);
         const value = Math.floor(progress * targetValue);
-
         element.textContent = value.toLocaleString();
 
         if (progress < 1) {

@@ -1,24 +1,22 @@
 // js/modules/navigation.js
 import {
     renderKnowledgeContent,
-    renderQuizHistory,
     renderActivities,
     renderForumPosts,
     renderRankings
 } from './ui.js';
+import { fetchAndRenderQuizHistory } from './quiz.js'; // Import hàm mới
 
 /* ==========================================
    CHUYỂN SECTION
 ========================================== */
 export function switchSection(sectionId) {
 
-    // 1️⃣ Ẩn tất cả section
     const allSections = document.querySelectorAll('.content-section');
     allSections.forEach(section => {
         section.classList.add('hidden-section');
     });
 
-    // 2️⃣ Hiển thị section được chọn
     const activeSection = document.getElementById(sectionId);
     if (!activeSection) {
         console.warn("Section không tồn tại:", sectionId);
@@ -27,7 +25,6 @@ export function switchSection(sectionId) {
 
     activeSection.classList.remove('hidden-section');
 
-    // 3️⃣ Cập nhật menu active
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
@@ -39,13 +36,8 @@ export function switchSection(sectionId) {
         activeNav.classList.add('active');
     }
 
-    // 4️⃣ Scroll lên đầu
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // 5️⃣ Render nội dung theo section
     renderSectionContent(sectionId);
 }
 
@@ -61,7 +53,7 @@ function renderSectionContent(sectionId) {
             break;
 
         case 'quiz-section':
-            renderQuizHistory();
+            fetchAndRenderQuizHistory(); // Gọi API để lấy lịch sử quiz
             break;
 
         case 'activities-section':
@@ -77,7 +69,6 @@ function renderSectionContent(sectionId) {
             break;
 
         case 'profile-section':
-            // Gọi hàm cập nhật profile từ global (đã export từ main.js)
             if (typeof window.updateProfileUI === 'function') {
                 window.updateProfileUI();
             }
