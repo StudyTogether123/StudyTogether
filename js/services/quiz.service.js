@@ -5,7 +5,8 @@ const API_BASE = "https://studytogether-backend.onrender.com/api";
 
 class QuizService {
     /**
-     * Helper: lấy headers với token xác thực nếu user đã đăng nhập
+     * Lấy header chứa token xác thực nếu người dùng đã đăng nhập
+     * @returns {Object} Header object với Authorization hoặc rỗng
      */
     _getAuthHeader() {
         const user = authService.getCurrentUser();
@@ -17,7 +18,7 @@ class QuizService {
      * @param {number} quizId - ID của quiz
      * @param {Object} answers - Map { questionId: answer }
      * @param {number} timeSpent - Thời gian làm bài (giây)
-     * @returns {Promise<Object>} - Kết quả từ server { score, totalQuestions, percentage, pointsEarned, ... }
+     * @returns {Promise<Object>} - Kết quả chi tiết từ server (bao gồm điểm, số câu, phần trăm, điểm nhận được, và chi tiết từng câu)
      */
     async submitQuiz(quizId, answers, timeSpent) {
         console.log('📝 QuizService.submitQuiz called with quizId:', quizId);
@@ -31,12 +32,12 @@ class QuizService {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Gửi quiz thất bại');
-        return data;
+        return data; // Trả về QuizResultDetailDTO
     }
 
     /**
-     * Lấy lịch sử quiz của user hiện tại
-     * @returns {Promise<Array>} - Danh sách kết quả quiz
+     * Lấy lịch sử quiz của người dùng hiện tại
+     * @returns {Promise<Array>} - Danh sách lịch sử quiz (QuizHistoryDTO)
      */
     async getQuizHistory() {
         console.log('📜 QuizService.getQuizHistory called');
@@ -54,7 +55,7 @@ class QuizService {
 
     /**
      * Lấy bảng xếp hạng (công khai)
-     * @returns {Promise<Array>} - Danh sách user theo điểm
+     * @returns {Promise<Array>} - Danh sách người dùng theo điểm
      */
     async getLeaderboard() {
         console.log('🏆 QuizService.getLeaderboard called');
@@ -68,8 +69,8 @@ class QuizService {
     }
 
     /**
-     * Lấy quiz daily (công khai)
-     * @returns {Promise<Object>} - Quiz daily (không kèm đáp án)
+     * Lấy quiz hàng ngày (công khai, không kèm đáp án)
+     * @returns {Promise<Object>} - Quiz daily
      */
     async getDailyQuiz() {
         console.log('📅 QuizService.getDailyQuiz called');
@@ -84,8 +85,8 @@ class QuizService {
 
     /**
      * Lấy quiz theo ID (công khai, không kèm đáp án)
-     * @param {number} quizId
-     * @returns {Promise<Object>}
+     * @param {number} quizId - ID của quiz
+     * @returns {Promise<Object>} - Quiz
      */
     async getQuizById(quizId) {
         console.log('🔍 QuizService.getQuizById called with id:', quizId);
@@ -99,9 +100,9 @@ class QuizService {
     }
 
     /**
-     * Kiểm tra user đã hoàn thành quiz nào đó chưa
-     * @param {number} quizId
-     * @returns {Promise<boolean>}
+     * Kiểm tra người dùng đã hoàn thành quiz nào đó chưa
+     * @param {number} quizId - ID của quiz
+     * @returns {Promise<boolean>} - true nếu đã hoàn thành
      */
     async hasCompletedQuiz(quizId) {
         console.log('✅ QuizService.hasCompletedQuiz called for quizId:', quizId);
@@ -118,8 +119,8 @@ class QuizService {
     }
 
     /**
-     * Lấy thống kê quiz của user (tổng số quiz, điểm trung bình, ...)
-     * @returns {Promise<Object>}
+     * Lấy thống kê quiz của người dùng hiện tại
+     * @returns {Promise<Object>} - Thống kê (tổng số quiz, điểm trung bình, điểm cao nhất, tổng điểm)
      */
     async getUserStats() {
         console.log('📊 QuizService.getUserStats called');

@@ -2969,3 +2969,23 @@ html {
 .form-links a:hover i {
     transform: translateX(-3px) rotate(-5deg);
 }
+
+.explanation {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f0f7ff;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    border-left: 3px solid #3498db;
+}
+.explanation-link {
+    display: inline-block;
+    margin-top: 8px;
+    color: #2980b9;
+    text-decoration: none;
+    font-weight: 500;
+}
+.explanation-link:hover {
+    text-decoration: underline;
+}

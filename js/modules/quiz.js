@@ -75,7 +75,6 @@ export function closeQuiz() {
    HIỂN THỊ CÂU HỎI QUIZ (dùng cho cả quiz chính và postDetail)
 ================================= */
 export function renderQuizQuestions() {
-    // Nếu có currentQuiz (quiz chính) thì dùng, nếu không thì dùng sampleData (cho postDetail)
     const quiz = currentQuiz || sampleData?.dailyQuiz;
     if (!quiz) {
         console.error('Không có dữ liệu quiz');
@@ -215,7 +214,6 @@ async function handleSubmit(e) {
     try {
         let result;
         if (currentQuiz) {
-            // Chuyển đổi answers từ index sang nội dung
             const answersToSend = {};
             currentQuiz.questions.forEach((q, idx) => {
                 const qId = q.id || `q${idx + 1}`;
@@ -225,14 +223,12 @@ async function handleSubmit(e) {
                 }
             });
             result = await quizService.submitQuiz(currentQuiz.id, answersToSend, 0);
-            // Cập nhật điểm
             const user = authService.getCurrentUser();
             if (user) {
                 const newPoints = (user.points || 0) + (result.pointsEarned || 0);
                 authService.updatePoints(newPoints);
             }
         } else {
-            // Nộp bài trong postDetail (dùng sampleData) – tính điểm local với index
             let score = 0;
             quiz.questions.forEach((q, index) => {
                 const questionId = q.id || `q${index + 1}`;
@@ -261,7 +257,7 @@ async function handleSubmit(e) {
 }
 
 /* ===============================
-   HIỂN THỊ KẾT QUẢ
+   HIỂN THỊ KẾT QUẢ (có chi tiết câu hỏi)
 ================================= */
 export function showQuizResult(result) {
     const container = document.getElementById('quizResult');
@@ -272,6 +268,41 @@ export function showQuizResult(result) {
 
     const percentage = result.percentage || Math.round((result.score / result.totalQuestions) * 100);
     const pointsEarned = result.pointsEarned || result.score * 10;
+
+    // Tạo phần chi tiết câu hỏi nếu có
+    let detailsHtml = '';
+    if (result.details && result.details.length > 0) {
+        detailsHtml = '<div class="result-details"><h3>Chi tiết câu trả lời</h3>';
+        result.details.forEach((item, index) => {
+            const isCorrect = item.correct; // backend trả về boolean correct
+            detailsHtml += `
+                <div class="result-item ${isCorrect ? 'correct' : 'incorrect'}">
+                    <div class="result-question">
+                        <span class="result-number">Câu ${index + 1}</span>
+                        <span class="result-icon">
+                            <i class="fas ${isCorrect ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                        </span>
+                    </div>
+                    <p class="result-question-text">${item.questionContent}</p>
+                    <div class="result-answers">
+                        <div class="user-answer">
+                            <span class="label">Bạn chọn:</span>
+                            <span class="value">${item.userAnswer || 'Chưa trả lời'}</span>
+                        </div>
+                        ${!isCorrect ? `
+                            <div class="correct-answer">
+                                <span class="label">Đáp án đúng:</span>
+                                <span class="value">${item.correctAnswer}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${item.explanation ? `<p class="explanation"><i class="fas fa-info-circle"></i> ${item.explanation}</p>` : ''}
+                    ${item.explanationLink ? `<a href="${item.explanationLink}" target="_blank" class="explanation-link"><i class="fas fa-external-link-alt"></i> Xem giải thích</a>` : ''}
+                </div>
+            `;
+        });
+        detailsHtml += '</div>';
+    }
 
     let resultHtml = `
         <div class="quiz-result-container">
@@ -287,6 +318,7 @@ export function showQuizResult(result) {
                     +${pointsEarned} điểm
                 </div>
             </div>
+            ${detailsHtml}
             <div class="result-actions">
                 <button class="btn btn-outline" id="backToQuizMenuBtn">
                     <i class="fas fa-arrow-left"></i> Quay lại
@@ -334,9 +366,7 @@ export function resetQuizAnswers() {
    CẬP NHẬT THỐNG KÊ (cho postDetail)
 ================================= */
 export function updateStatsAfterQuiz(result) {
-    // Hàm này dành cho postDetail, chỉ log hoặc cập nhật gì đó nếu cần
     console.log('updateStatsAfterQuiz called with result:', result);
-    // Có thể thêm thông báo
     toastr.success(`Bạn đã đạt ${result.score}/${result.totalQuestions} điểm!`);
 }
 
