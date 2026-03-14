@@ -1,7 +1,9 @@
 // js/modules/quiz.js
 import { quizService } from '../services/quiz.service.js';
 import { authService } from '../services/auth.service.js';
-import { sampleData } from './data.js'; // Dùng cho postDetail (fallback)
+import { sampleData } from './data.js';
+
+const API_BASE = "https://studytogether-backend.onrender.com/api";
 
 let currentQuiz = null;
 let currentQuizAnswers = {};
@@ -13,6 +15,11 @@ let timerInterval = null;
 
 export async function startQuiz() {
     console.log('🚀 Bắt đầu làm quiz');
+    if (!authService.isAuthenticated()) {
+        toastr.warning('Vui lòng đăng nhập để làm quiz!');
+        if (window.openAuthModal) window.openAuthModal(true);
+        return;
+    }
     try {
         currentQuiz = await quizService.getDailyQuiz();
         if (!currentQuiz) {
@@ -83,6 +90,18 @@ export async function fetchAndRenderQuizHistory() {
     const container = document.getElementById('quiz-history');
     if (!container) return;
 
+    if (!authService.isAuthenticated()) {
+        container.innerHTML = '<p class="empty-state">Vui lòng <a href="#" id="loginToSeeHistory">đăng nhập</a> để xem lịch sử quiz.</p>';
+        const loginLink = document.getElementById('loginToSeeHistory');
+        if (loginLink) {
+            loginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.openAuthModal) window.openAuthModal(true);
+            });
+        }
+        return;
+    }
+
     try {
         const history = await quizService.getQuizHistory();
         if (!history || history.length === 0) {
@@ -92,14 +111,26 @@ export async function fetchAndRenderQuizHistory() {
         container.innerHTML = buildHistoryHTML(history);
     } catch (error) {
         console.error('❌ Lỗi khi lấy lịch sử quiz:', error);
-        container.innerHTML = '<p class="error-message">Không thể tải lịch sử. Vui lòng thử lại sau.</p>';
+        if (error.message.includes('401')) {
+            toastr.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+            authService.logout();
+            container.innerHTML = '<p class="empty-state">Vui lòng <a href="#" id="loginToSeeHistory">đăng nhập</a> để xem lịch sử quiz.</p>';
+            const loginLink = document.getElementById('loginToSeeHistory');
+            if (loginLink) {
+                loginLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (window.openAuthModal) window.openAuthModal(true);
+                });
+            }
+        } else {
+            container.innerHTML = '<p class="error-message">Không thể tải lịch sử. Vui lòng thử lại sau.</p>';
+        }
     }
 }
 
 export function initQuiz() {
     console.log('%c=== INITIALIZING QUIZ ===', 'color: #4361ee; font-weight: bold');
     attachEventListeners();
-    // Nếu đang ở section quiz, tải lịch sử
     if (!document.getElementById('quiz-section')?.classList.contains('hidden-section')) {
         fetchAndRenderQuizHistory();
     }
@@ -264,7 +295,6 @@ async function handleSubmit(e) {
     try {
         let result;
         if (currentQuiz) {
-            // Gửi lên server
             const answersToSend = {};
             currentQuiz.questions.forEach((q, idx) => {
                 const qId = q.id || `q${idx + 1}`;
@@ -274,14 +304,15 @@ async function handleSubmit(e) {
                 }
             });
             result = await quizService.submitQuiz(currentQuiz.id, answersToSend, 0);
-            // Cập nhật điểm user
-            const user = authService.getCurrentUser();
-            if (user) {
-                const newPoints = (user.points || 0) + (result.pointsEarned || 0);
-                authService.updatePoints(newPoints);
+
+            if (result.counted) {
+                const user = authService.getCurrentUser();
+                if (user) {
+                    const newPoints = (user.points || 0) + (result.pointsEarned || 0);
+                    authService.updatePoints(newPoints);
+                }
             }
         } else {
-            // Fallback: tự tính điểm (dùng sampleData)
             let score = 0;
             quiz.questions.forEach((q, index) => {
                 const questionId = q.id || `q${index + 1}`;
@@ -294,25 +325,107 @@ async function handleSubmit(e) {
                 score,
                 totalQuestions: quiz.questions.length,
                 percentage: Math.round((score / quiz.questions.length) * 100),
-                pointsEarned: score * 10
+                pointsEarned: score * 10,
+                counted: true
             };
         }
 
         showQuizResult(result);
-        toastr.success(`✅ Bạn đã đạt ${result.score}/${result.totalQuestions} điểm! (+${result.pointsEarned} điểm)`);
+
+        // Gọi AI Coach nếu có câu sai
+        if (result.details && result.details.some(d => !d.correct)) {
+            await fetchAIAdvice(result.details);
+        }
+
+        // Hiển thị thông báo
+        if (result.counted) {
+            toastr.success(`✅ Bạn đã đạt ${result.score}/${result.totalQuestions} điểm! (+${result.pointsEarned} điểm)`);
+        } else {
+            toastr.info(`📝 Bạn đã làm quiz này rồi. Điểm lần này: ${result.score}/${result.totalQuestions} (không được cộng thêm)`);
+        }
+
+        fetchAndRenderQuizHistory();
     } catch (error) {
         console.error('❌ Lỗi khi nộp bài:', error);
-        toastr.error(error.message || 'Nộp bài thất bại. Vui lòng thử lại.');
+        if (error.message.includes('401')) {
+            toastr.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+            authService.logout();
+            closeQuiz();
+            if (window.openAuthModal) window.openAuthModal(true);
+        } else {
+            toastr.error(error.message || 'Nộp bài thất bại. Vui lòng thử lại.');
+        }
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     }
 }
 
+// Hàm gọi AI Coach
+async function fetchAIAdvice(details) {
+    try {
+        const mistakes = details
+            .filter(item => !item.correct)
+            .map(item => ({
+                question: item.questionContent,
+                userAnswer: item.userAnswer,
+                correctAnswer: item.correctAnswer,
+                explanation: item.explanation,
+                explanationLink: item.explanationLink
+            }));
+
+        if (mistakes.length === 0) return;
+
+        const token = authService.getCurrentUser()?.token;
+        const response = await fetch(`${API_BASE}/ai/advice`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({ mistakes })
+        });
+
+        if (!response.ok) {
+            console.warn('AI advice failed:', await response.text());
+            return;
+        }
+
+        const data = await response.json();
+        showAIAdvice(data.advice);
+    } catch (error) {
+        console.error('❌ Lỗi khi gọi AI coach:', error);
+    }
+}
+
+// Hiển thị lời khuyên AI
+function showAIAdvice(advice) {
+    let aiBox = document.getElementById('ai-advice-box');
+    if (!aiBox) {
+        aiBox = document.createElement('div');
+        aiBox.id = 'ai-advice-box';
+        aiBox.className = 'ai-advice-box';
+        const resultContainer = document.querySelector('.quiz-result-container');
+        if (resultContainer) {
+            resultContainer.insertAdjacentElement('afterend', aiBox);
+        } else {
+            document.getElementById('quizResult').appendChild(aiBox);
+        }
+    }
+    aiBox.innerHTML = `
+        <h4><i class="fas fa-robot"></i> Gợi ý ôn tập từ AI</h4>
+        <div class="ai-advice-content">${advice.replace(/\n/g, '<br>')}</div>
+    `;
+}
+
 function buildResultHTML(result, percentage, pointsEarned) {
     let detailsHtml = '';
+    let mistakeListHtml = '';
+
     if (result.details && result.details.length > 0) {
         detailsHtml = '<div class="result-details"><h3>Chi tiết câu trả lời</h3>';
+        const mistakes = [];
+
         result.details.forEach((item, index) => {
             const isCorrect = item.correct;
             detailsHtml += `
@@ -340,9 +453,43 @@ function buildResultHTML(result, percentage, pointsEarned) {
                     ${item.explanationLink ? `<a href="${escapeHtml(item.explanationLink)}" target="_blank" class="explanation-link"><i class="fas fa-external-link-alt"></i> Xem giải thích</a>` : ''}
                 </div>
             `;
+
+            if (!isCorrect && item.explanationLink) {
+                mistakes.push({
+                    question: item.questionContent,
+                    link: item.explanationLink
+                });
+            }
         });
+
         detailsHtml += '</div>';
+
+        if (mistakes.length > 0) {
+            mistakeListHtml = `
+                <div class="mistake-summary">
+                    <h4><i class="fas fa-book-open"></i> Bạn cần ôn tập các kiến thức sau:</h4>
+                    <ul>
+                        ${mistakes.map(m => `
+                            <li>
+                                <a href="${escapeHtml(m.link)}" target="_blank">
+                                    ${escapeHtml(m.question)}
+                                </a>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <p class="mistake-tip">💡 Hãy nhấp vào từng link để đọc bài viết chi tiết và củng cố kiến thức.</p>
+                </div>
+            `;
+        } else if (result.score < result.totalQuestions) {
+            mistakeListHtml = `
+                <div class="mistake-summary">
+                    <p><i class="fas fa-info-circle"></i> Bạn đã sai ${result.totalQuestions - result.score} câu. Hãy xem giải thích chi tiết ở trên để hiểu rõ hơn.</p>
+                </div>
+            `;
+        }
     }
+
+    const practiceNote = !result.counted ? '<p class="practice-note"><i class="fas fa-info-circle"></i> Lần làm này không được cộng điểm vì bạn đã làm quiz trước đó.</p>' : '';
 
     return `
         <div class="quiz-result-container">
@@ -357,7 +504,9 @@ function buildResultHTML(result, percentage, pointsEarned) {
                     <i class="fas fa-star"></i>
                     +${pointsEarned} điểm
                 </div>
+                ${practiceNote}
             </div>
+            ${mistakeListHtml}
             ${detailsHtml}
             <div class="result-actions">
                 <button class="btn btn-outline" id="backToQuizMenuBtn">
@@ -396,14 +545,18 @@ function buildHistoryHTML(history) {
                 </tr>
             </thead>
             <tbody>
-                ${history.map(item => `
-                    <tr>
-                        <td>${new Date(item.completedAt).toLocaleDateString('vi-VN')}</td>
-                        <td>${escapeHtml(item.quizTitle || 'Quiz')}</td>
-                        <td>${item.score}/${item.totalQuestions}</td>
-                        <td>${item.score * 10}</td>
-                    </tr>
-                `).join('')}
+                ${history.map(item => {
+                    const pointsReceived = item.counted ? item.score * 10 : 0;
+                    const badge = item.counted ? '' : '<span class="badge practice-badge">(Luyện tập)</span>';
+                    return `
+                        <tr>
+                            <td>${new Date(item.completedAt).toLocaleDateString('vi-VN')}</td>
+                            <td>${escapeHtml(item.quizTitle)} ${badge}</td>
+                            <td>${item.score}/${item.totalQuestions}</td>
+                            <td>${pointsReceived}</td>
+                        </tr>
+                    `;
+                }).join('')}
             </tbody>
         </table>
     `;
