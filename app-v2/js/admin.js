@@ -84,6 +84,12 @@ function handleRoute(e) {
             console.log("Load user page");
             break;
 
+        case "report":
+            import('./modules/report.module.js').then(module => {
+                module.loadReports();
+            });
+            break;
+
         default:
             loadDashboard();
     }

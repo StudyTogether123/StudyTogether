@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Together - Đồng hành cùng tân sinh viên FPT Đà Nẵng</title>
+    <title>Study Together - Quản trị viên</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <!-- Styles chung (từ thư mục gốc) -->
     <link rel="stylesheet" href="../css/style.css">
+    <!-- Style riêng cho admin -->
     <link rel="stylesheet" href="css/admin.css">
     <link rel="icon" type="image/png" href="https://daihoc.fpt.edu.vn/favicon.ico">
 </head>
 <body>
-    <!-- Header -->
+    <!-- Header (giống index.html) -->
     <header id="main-header">
         <div class="container header-container">
             <a href="#" class="logo" id="homeLogo">
@@ -48,6 +50,13 @@
                     <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a>
                 </div>
             </div>
+
+            <!-- Mobile Menu Button -->
+            <div class="mobile-menu-btn" id="mobileMenuBtn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </div>
     </header>
 
@@ -75,10 +84,7 @@
             <!-- Nội dung nổi bật -->
             <div class="container">
                 <h2 class="section-title">Nội dung nổi bật</h2>
-                
-                <div class="features" id="featured-content">
-                    <!-- Nội dung sẽ được tải động bằng JavaScript -->
-                </div>
+                <div class="features" id="featured-content"></div>
             </div>
 
             <!-- Thống kê nhanh -->
@@ -89,12 +95,12 @@
                         <div class="stat-text">Sinh viên FPT Đang tham gia</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number" id="quizCompleted">0</div>
+                        <div class="stat-number" id="quizCompletedCount">0</div>
                         <div class="stat-text">Quiz đã hoàn thành hôm nay</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-number" id="upcomingEvents">0</div>
-                        <div class="stat-text">Sự kiện Đã diễn ra</div>
+                        <div class="stat-text">Sự kiện sắp diễn ra</div>
                     </div>
                 </div>
             </section>
@@ -104,15 +110,23 @@
                 <div class="quiz-today">
                     <div class="quiz-content">
                         <h3>Quiz hằng ngày - FPT Đà Nẵng</h3>
-                        <p>Thử thách bản thân với quiz hôm nay để ôn lại kiến thức và nhận điểm hoạt động. Quiz được xây dựng từ nội dung bài viết và video trên website.</p>
-                        <div class="quiz-progress">
-                            <div class="quiz-progress-bar" id="quizProgressBar"></div>
+                        <p>Thử thách bản thân với quiz hôm nay để ôn lại kiến thức và nhận điểm hoạt động.</p>
+                        <div class="quiz-progress-wrapper">
+                            <div class="quiz-progress-header">
+                                <span><i class="fas fa-chart-line"></i> Số câu hỏi hôm nay</span>
+                                <span class="quiz-progress-percentage" id="quizPercentage">20 câu hỏi</span>
+                            </div>
+                            <div class="quiz-stats">
+                                <span><i class="fas fa-users"></i> <span id="quizCompletedToday">0</span> người đã làm</span>
+                                <span><i class="fas fa-star"></i> Nhận 10 điểm</span>
+                            </div>
                         </div>
-                        <p><strong id="quizPercentage">0% sinh viên</strong> đã hoàn thành quiz hôm nay</p>
-                        <a href="#" class="btn btn-primary" id="takeQuizBtn">Làm quiz ngay</a>
+                        <button class="btn btn-primary" id="takeQuizBtn">
+                            <i class="fas fa-play"></i> Làm quiz ngay
+                        </button>
                     </div>
                     <div class="quiz-image">
-                        <img src="https://images.unsplash.com/photo-1501504905252-473c47e087f8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="Quiz hằng ngày">
+                        <img src="https://images.unsplash.com/photo-1501504905252-473c47e087f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Quiz hằng ngày">
                     </div>
                 </div>
             </div>
@@ -122,34 +136,84 @@
         <section id="knowledge-section" class="content-section hidden-section">
             <div class="container">
                 <h2 class="section-title">Kiến thức cho tân sinh viên FPT</h2>
-                <div class="features" id="knowledge-content">
-                    <!-- Nội dung kiến thức sẽ được tải động -->
-                </div>
+                <div class="features" id="knowledge-content"></div>
             </div>
         </section>
 
-        <!-- Quiz -->
+        <!-- Chi tiết bài viết -->
+        <section id="post-detail-section" class="content-section hidden-section">
+            <div class="container">
+                <div id="post-detail-content"></div>
+            </div>
+        </section>
+
+        <!-- Quiz Section -->
         <section id="quiz-section" class="content-section hidden-section">
             <div class="container">
-                <h2 class="section-title">Quiz hàng ngày</h2>
-                <div class="quiz-today">
-                    <div class="quiz-content">
-                        <h3>Tham gia quiz để tích lũy điểm</h3>
-                        <p>Mỗi ngày có 1 bộ quiz với 5-10 câu hỏi từ các bài viết và video trên website. Hoàn thành quiz để nhận điểm hoạt động và xếp hạng.</p>
-                        <div class="quiz-progress">
-                            <div class="quiz-progress-bar" id="quizProgressBar2"></div>
-                        </div>
-                        <p><strong id="quizPercentage2">0% sinh viên</strong> đã hoàn thành quiz hôm nay</p>
-                        <a href="#" class="btn btn-primary" id="takeQuizBtn2">Làm quiz ngay</a>
-                    </div>
-                    <div class="quiz-image">
-                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="Quiz hằng ngày">
-                    </div>
+                <div class="quiz-header-section">
+                    <h2 class="section-title">Quiz hàng ngày</h2>
+                    <button class="btn btn-primary" id="startQuizNowBtn">
+                        <i class="fas fa-play"></i> Bắt đầu làm quiz ngay
+                    </button>
                 </div>
                 
-                <h3 class="section-title" style="margin-top: 60px; font-size: 24px;">Lịch sử quiz của bạn</h3>
-                <div id="quiz-history">
-                    <!-- Lịch sử quiz sẽ được tải động -->
+                <div class="quiz-stats-section">
+                    <!-- Thông tin quiz -->
+                    <div class="quiz-info-cards">
+                        <div class="quiz-info-card">
+                            <i class="fas fa-question-circle"></i>
+                            <div class="info-content">
+                                <span class="info-label">Tổng số câu</span>
+                                <span class="info-value" id="totalQuestionsDisplay">20 câu</span>
+                            </div>
+                        </div>
+                        <div class="quiz-info-card">
+                            <i class="fas fa-star"></i>
+                            <div class="info-content">
+                                <span class="info-label">Điểm tối đa</span>
+                                <span class="info-value" id="maxScoreDisplay">200 điểm</span>
+                            </div>
+                        </div>
+                        <div class="quiz-info-card">
+                            <i class="fas fa-clock"></i>
+                            <div class="info-content">
+                                <span class="info-label">Thời gian</span>
+                                <span class="info-value">Không giới hạn</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Container cho câu hỏi quiz -->
+                    <div id="quizQuestions" class="quiz-questions-container" style="display: none;"></div>
+                    
+                    <!-- Container cho kết quả quiz -->
+                    <div id="quizResult" class="quiz-result-container" style="display: none;"></div>
+                    
+                    <!-- Nút điều khiển quiz -->
+                    <div class="quiz-actions">
+                        <button id="submitQuizBtn" class="btn btn-primary" style="display: none;">
+                            <i class="fas fa-check"></i> Nộp bài
+                        </button>
+                        <button id="closeQuizResultBtn" class="btn btn-outline" style="display: none;">
+                            <i class="fas fa-times"></i> Đóng
+                        </button>
+                    </div>
+                    
+                    <!-- Lịch sử quiz -->
+                    <div class="quiz-history-section">
+                        <div class="quiz-history-header">
+                            <h3><i class="fas fa-history"></i> Lịch sử quiz của bạn</h3>
+                            <div class="history-actions">
+                                <button class="btn btn-outline" id="refreshQuizHistoryBtn">
+                                    <i class="fas fa-sync-alt"></i> Làm mới
+                                </button>
+                                <button class="btn btn-primary" id="startQuizFromHistory">
+                                    <i class="fas fa-play"></i> Làm quiz mới
+                                </button>
+                            </div>
+                        </div>
+                        <div id="quiz-history" class="quiz-history-list"></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -158,14 +222,14 @@
         <section id="activities-section" class="content-section hidden-section">
             <div class="container">
                 <h2 class="section-title fpt">Hoạt động FPT Đà Nẵng</h2>
-                <p style="text-align: center; margin-bottom: 40px; font-size: 18px;">Các sự kiện, hoạt động ngoại khóa và talkshow dành cho sinh viên FPTU Đà Nẵng</p>
+                <p class="section-description">Các sự kiện, hoạt động ngoại khóa và talkshow dành cho sinh viên FPTU Đà Nẵng</p>
                 
-                <div class="activities-grid" id="activities-content">
-                    <!-- Nội dung hoạt động sẽ được tải động -->
-                </div>
+                <div class="activities-grid" id="activities-content"></div>
                 
-                <div style="text-align: center; margin-top: 40px;">
-                    <button class="btn btn-fpt" id="loadMoreActivities">Xem thêm hoạt động</button>
+                <div class="text-center">
+                    <button class="btn btn-fpt" id="loadMoreActivities">
+                        <i class="fas fa-arrow-down"></i> Xem thêm hoạt động
+                    </button>
                 </div>
             </div>
         </section>
@@ -174,7 +238,7 @@
         <section id="community-section" class="content-section hidden-section">
             <div class="container">
                 <h2 class="section-title fpt">Cộng đồng FPT Đà Nẵng</h2>
-                <p style="text-align: center; margin-bottom: 40px; font-size: 18px;">Kết nối, chia sẻ và học hỏi cùng cộng đồng sinh viên FPTU Đà Nẵng</p>
+                <p class="section-description">Kết nối, chia sẻ và học hỏi cùng cộng đồng sinh viên FPTU Đà Nẵng</p>
                 
                 <div class="community-container">
                     <div class="community-card">
@@ -183,7 +247,9 @@
                         </div>
                         <h3>Diễn đàn thảo luận</h3>
                         <p>Thảo luận, đặt câu hỏi và chia sẻ kinh nghiệm học tập với sinh viên FPT</p>
-                        <button class="btn btn-fpt" id="joinForumBtn">Tham gia ngay</button>
+                        <button class="btn btn-fpt" id="joinForumBtn">
+                            <i class="fas fa-sign-in-alt"></i> Tham gia ngay
+                        </button>
                     </div>
                     
                     <div class="community-card">
@@ -192,7 +258,9 @@
                         </div>
                         <h3>Nhóm học tập</h3>
                         <p>Kết nối với các nhóm học tập theo môn học, chuyên ngành tại FPT</p>
-                        <button class="btn btn-fpt" id="findGroupBtn">Tìm nhóm</button>
+                        <button class="btn btn-fpt" id="findGroupBtn">
+                            <i class="fas fa-search"></i> Tìm nhóm
+                        </button>
                     </div>
                     
                     <div class="community-card">
@@ -201,18 +269,20 @@
                         </div>
                         <h3>Hỏi đáp cùng giảng viên</h3>
                         <p>Đặt câu hỏi trực tiếp với giảng viên và mentor FPT Đà Nẵng</p>
-                        <button class="btn btn-fpt" id="askQuestionBtn">Đặt câu hỏi</button>
+                        <button class="btn btn-fpt" id="askQuestionBtn">
+                            <i class="fas fa-pen"></i> Đặt câu hỏi
+                        </button>
                     </div>
                 </div>
                 
                 <div class="forum-posts">
-                    <h3 style="margin-bottom: 25px; font-size: 24px;">Bài viết mới từ cộng đồng</h3>
-                    <div id="forum-posts-content">
-                        <!-- Bài viết diễn đàn sẽ được tải động -->
-                    </div>
+                    <h3>Bài viết mới từ cộng đồng</h3>
+                    <div id="forum-posts-content"></div>
                     
-                    <div style="text-align: center; margin-top: 30px;">
-                        <button class="btn btn-outline" id="createPostBtn">Tạo bài viết mới</button>
+                    <div class="text-center">
+                        <button class="btn btn-outline" id="createPostBtn">
+                            <i class="fas fa-plus"></i> Tạo bài viết mới
+                        </button>
                     </div>
                 </div>
             </div>
@@ -223,27 +293,92 @@
             <div class="container">
                 <h2 class="section-title">Bảng xếp hạng FPT Đà Nẵng</h2>
                 
-                <div style="text-align: center; margin-bottom: 30px;">
-                    <button class="btn btn-outline" id="weeklyRankingBtn" style="margin-right: 10px;">Xếp hạng tuần</button>
-                    <button class="btn btn-primary" id="monthlyRankingBtn">Xếp hạng tháng</button>
+                <div class="ranking-tabs">
+                    <button class="btn btn-outline" id="weeklyRankingBtn">
+                        <i class="fas fa-calendar-week"></i> Xếp hạng tuần
+                    </button>
+                    <button class="btn btn-primary" id="monthlyRankingBtn">
+                        <i class="fas fa-calendar-alt"></i> Xếp hạng tháng
+                    </button>
                 </div>
                 
-                <div id="ranking-content">
-                    <!-- Bảng xếp hạng sẽ được tải động -->
-                </div>
+                <div id="ranking-content"></div>
             </div>
         </section>
 
         <!-- Hồ sơ -->
         <section id="profile-section" class="content-section hidden-section">
             <div class="container">
-                <h2 class="section-title">Hồ sơ cá nhân</h2>
-
-                <div style="max-width:500px;margin:0 auto;background:#fff;padding:30px;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,0.1)">
-                    <p><strong>Tên đăng nhập:</strong> <span id="profileUsername">---</span></p>
-                    <p><strong>Email:</strong> <span id="profileEmail">---</span></p>
-                    <p><strong>Điểm tích lũy:</strong> <span id="profilePoints">0</span></p>
+                <div class="profile-container">
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <span class="avatar-icon" id="profileAvatar">U</span>
+                            </div>
+                            <h1>Hồ sơ cá nhân</h1>
+                            <span class="profile-badge" id="profileBadge">Thành viên</span>
+                        </div>
+                        
+                        <div class="profile-content">
+                            <div class="profile-item">
+                                <div class="item-icon">👤</div>
+                                <div class="item-details">
+                                    <div class="item-label">Tên đăng nhập</div>
+                                    <div class="item-value" id="profileUsername">---</div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="item-icon">📧</div>
+                                <div class="item-details">
+                                    <div class="item-label">Email</div>
+                                    <div class="item-value" id="profileEmail">---</div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-item">
+                                <div class="item-icon">⭐</div>
+                                <div class="item-details">
+                                    <div class="item-label">Điểm tích lũy</div>
+                                    <div class="points-display" id="profilePoints">
+                                        0 <span>điểm</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="rankStat">Bronze</div>
+                                <div class="stat-label">Hạng</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="joinDateStat">2024</div>
+                                <div class="stat-label">Tham gia</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="activityStat">0</div>
+                                <div class="stat-label">Quiz đã làm</div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-actions">
+                            <button class="btn" onclick="editProfile()">
+                                <span>Chỉnh sửa</span>
+                            </button>
+                            <button class="btn btn-outline" onclick="viewQuizHistory()">
+                                <span>Lịch sử</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Báo cáo lỗi - Admin -->
+        <section id="report-section" class="content-section hidden-section">
+            <div class="container">
+                <!-- Nội dung sẽ được render bởi JavaScript -->
             </div>
         </section>
     </main>
@@ -255,54 +390,99 @@
             <h2 id="modalTitle">Đăng ký tài khoản</h2>
 
             <form id="authForm">
-                <!-- USERNAME -->
                 <div class="form-group">
                     <label for="username">Tên đăng nhập:</label>
                     <input type="text" id="username" placeholder="Nhập tên đăng nhập" required>
                 </div>
 
-                <!-- EMAIL (CHỈ HIỆN KHI REGISTER) -->
                 <div class="form-group" id="emailGroup">
                     <label for="email">Email:</label>
                     <input type="email" id="email" placeholder="example@fpt.edu.vn">
                 </div>
 
-                <!-- PASSWORD -->
                 <div class="form-group">
                     <label for="password">Mật khẩu:</label>
                     <input type="password" id="password" placeholder="••••••••" required>
                 </div>
 
-                <!-- CONFIRM PASSWORD -->
                 <div class="form-group" id="confirmPasswordGroup">
                     <label for="confirmPassword">Xác nhận mật khẩu:</label>
                     <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu">
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="authSubmitBtn">
-                    Đăng ký
-                </button>
+                <button type="submit" class="btn btn-primary" id="authSubmitBtn">Đăng ký</button>
 
-                <p style="margin-top: 20px; text-align: center;">
+                <p class="text-center">
                     <a href="#" id="switchAuthMode">Đã có tài khoản? Đăng nhập ngay</a>
                 </p>
             </form>
         </div>
     </div>
 
-    <!-- Modal quiz -->
-    <div class="modal quiz-modal" id="quizModal">
+    <!-- Modal Quên mật khẩu -->
+    <div class="modal" id="forgotPasswordModal">
         <div class="modal-content">
-            <span class="close-modal" id="closeQuizModal">&times;</span>
-            <div id="quizQuestions">
-                <!-- Câu hỏi quiz sẽ được tải động -->
+            <span class="close-modal" id="closeForgotModal">&times;</span>
+            <h2><i class="fas fa-key"></i> Quên mật khẩu</h2>
+            <p class="modal-description">Nhập email của bạn, chúng tôi sẽ gửi mã xác nhận.</p>
+            <form id="forgotPasswordForm">
+                <div class="form-group">
+                    <label for="forgotEmail">Email:</label>
+                    <input type="email" id="forgotEmail" placeholder="example@fpt.edu.vn" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Gửi mã xác nhận</button>
+            </form>
+            <div class="form-links">
+                <a href="#" id="backToLoginFromForgot"><i class="fas fa-arrow-left"></i> Quay lại đăng nhập</a>
             </div>
-            <div id="quizResult" style="display: none;">
-                <!-- Kết quả quiz sẽ được hiển thị -->
+        </div>
+    </div>
+
+    <!-- Modal Nhập OTP -->
+    <div class="modal" id="otpModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeOtpModal">&times;</span>
+            <h2><i class="fas fa-shield-alt"></i> Xác nhận OTP</h2>
+            <p class="modal-description">Nhập mã 6 chữ số đã được gửi đến email của bạn.</p>
+            <form id="otpForm">
+                <div class="form-group otp-input-group">
+                    <label for="otpCode">Mã xác nhận:</label>
+                    <input type="text" id="otpCode" maxlength="6" placeholder="••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Xác nhận</button>
+            </form>
+            <div class="form-links">
+                <a href="#" id="resendOtpBtn"><i class="fas fa-redo"></i> Gửi lại mã</a>
+                <a href="#" id="backToForgotFromOtp"><i class="fas fa-arrow-left"></i> Quay lại</a>
             </div>
-            <div style="text-align: center; margin-top: 30px;">
-                <button class="btn btn-primary" id="submitQuizBtn" style="display: none;">Nộp bài</button>
-                <button class="btn btn-outline" id="closeQuizResultBtn" style="display: none;">Đóng</button>
+        </div>
+    </div>
+
+    <!-- Modal Đặt lại mật khẩu -->
+    <div class="modal" id="resetPasswordModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeResetModal">&times;</span>
+            <h2><i class="fas fa-lock"></i> Đặt mật khẩu mới</h2>
+            <p class="modal-description">Nhập mật khẩu mới cho tài khoản của bạn.</p>
+            <form id="resetPasswordForm">
+                <div class="form-group">
+                    <label for="newPassword">Mật khẩu mới:</label>
+                    <div class="password-input">
+                        <input type="password" id="newPassword" placeholder="••••••••" required>
+                        <i class="fas fa-eye toggle-password" data-target="newPassword"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirmNewPassword">Xác nhận mật khẩu:</label>
+                    <div class="password-input">
+                        <input type="password" id="confirmNewPassword" placeholder="••••••••" required>
+                        <i class="fas fa-eye toggle-password" data-target="confirmNewPassword"></i>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+            </form>
+            <div class="form-links">
+                <a href="#" id="backToLoginFromReset"><i class="fas fa-arrow-left"></i> Quay lại đăng nhập</a>
             </div>
         </div>
     </div>
@@ -315,11 +495,11 @@
             <form id="postForm">
                 <div class="form-group">
                     <label for="postTitle">Tiêu đề:</label>
-                    <input type="text" id="postTitle" name="postTitle" placeholder="Nhập tiêu đề bài viết" required>
+                    <input type="text" id="postTitle" placeholder="Nhập tiêu đề bài viết" required>
                 </div>
                 <div class="form-group">
                     <label for="postCategory">Chuyên mục:</label>
-                    <select id="postCategory" name="postCategory">
+                    <select id="postCategory">
                         <option value="study">Học tập</option>
                         <option value="activity">Hoạt động</option>
                         <option value="question">Hỏi đáp</option>
@@ -329,7 +509,7 @@
                 </div>
                 <div class="form-group">
                     <label for="postContent">Nội dung:</label>
-                    <textarea id="postContent" name="postContent" rows="6" placeholder="Nhập nội dung bài viết..." required></textarea>
+                    <textarea id="postContent" rows="6" placeholder="Nhập nội dung bài viết..." required></textarea>
                 </div>
                 <button type="submit" class="btn btn-fpt">Đăng bài</button>
             </form>
@@ -342,12 +522,12 @@
             <div class="footer-container">
                 <div class="footer-column">
                     <h3>StudyTogether - FPT Đà Nẵng</h3>
-                    <p>Website đồng hành cùng tân sinh viên FPTU Đà Nẵng trong những bước đầu đại học. Học mà không áp lực - Kết nối - Chia sẻ - Phát triển.</p>
+                    <p>Website đồng hành cùng tân sinh viên FPTU Đà Nẵng trong những bước đầu đại học.</p>
                     <div class="social-icons">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
                     </div>
                 </div>
                 
@@ -357,7 +537,7 @@
                         <li><a href="#" class="footer-nav" data-section="home">Trang chủ</a></li>
                         <li><a href="#" class="footer-nav" data-section="knowledge">Kiến thức</a></li>
                         <li><a href="#" class="footer-nav" data-section="quiz">Quiz hằng ngày</a></li>
-                        <li><a href="#" class="footer-nav" data-section="activities">Hoạt động FPT</a></li>
+                        <li><a href="#" class="footer-nav" data-section="activities">Hoạt động</a></li>
                         <li><a href="#" class="footer-nav" data-section="community">Cộng đồng</a></li>
                         <li><a href="#" class="footer-nav" data-section="ranking">Bảng xếp hạng</a></li>
                     </ul>
@@ -368,38 +548,32 @@
                     <ul>
                         <li><a href="#">Học tập tại FPT</a></li>
                         <li><a href="#">Kỹ năng mềm</a></li>
-                        <li><a href="#">Đời sống sinh viên FPT</a></li>
+                        <li><a href="#">Đời sống sinh viên</a></li>
                         <li><a href="#">Định hướng nghề nghiệp</a></li>
-                        <li><a href="#">Hoạt động ngoại khóa</a></li>
                     </ul>
                 </div>
                 
                 <div class="footer-column">
                     <h3>Liên hệ</h3>
                     <ul>
-                        <li><i class="fas fa-map-marker-alt"></i> Khu đô thị FPT City, Ngũ Hành Sơn, Đà Nẵng</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Khu đô thị FPT City, Đà Nẵng</li>
                         <li><i class="fas fa-phone"></i> (0236) 710 9999</li>
                         <li><i class="fas fa-envelope"></i> studytogether@fpt.edu.vn</li>
-                        <li><i class="fas fa-globe"></i> fpt.edu.vn</li>
                     </ul>
                 </div>
             </div>
             
             <div class="copyright">
-                <p>&copy; 2025 StudyTogether - Đại học FPT Đà Nẵng. Tất cả các quyền được bảo lưu.</p>
-                <p>Website được xây dựng nhằm hỗ trợ tân sinh viên FPT thích nghi với môi trường đại học.</p>
+                <p>&copy; 2025 StudyTogether - Đại học FPT Đà Nẵng</p>
             </div>
         </div>
     </footer>
 
-    <!-- jQuery -->
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-
-    <!-- Toastr -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-
+    
     <script>
-        // Cấu hình Toastr
         toastr.options = {
             closeButton: true,
             progressBar: true,
@@ -411,8 +585,16 @@
             preventDuplicates: true
         };
     </script>
-<script type="module" src="js/guard.js"></script>
-<script type="module" src="../js/modules/main.js"></script>
-<script type="module" src="js/admin.js"></script>
+
+    <!-- Load Auth Service (từ thư mục gốc) -->
+    <script type="module" src="../js/services/auth.service.js"></script>
+    <!-- App Loader (nằm ở thư mục gốc) – sẽ bỏ qua main.js vì đang ở app-v2 -->
+    <script type="module" src="../app-loader.js"></script>
+    <!-- Load user main app để có đầy đủ chức năng người dùng (kể cả quiz) -->
+    <script type="module" src="../js/modules/main.js"></script>
+    <!-- Kiểm tra quyền admin (guard) -->
+    <script type="module" src="js/guard.js"></script>
+    <!-- Khởi tạo các tính năng admin (sidebar, menu, v.v.) -->
+    <script type="module" src="js/admin.js"></script>
 </body>
 </html>

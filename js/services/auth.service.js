@@ -4,32 +4,45 @@ const API_BASE = "https://studytogether-backend.onrender.com/api";
 
 class AuthService {
     constructor() {
+        console.log('🔧 AuthService constructor called');
         this.storage = this._getStorage();
         this._user = null;
         this._subscribers = [];
         this._init();
     }
 
-    // Chọn storage an toàn (localStorage fallback)
     _getStorage() {
         try {
             localStorage.setItem('test', '1');
             localStorage.removeItem('test');
+            console.log('📦 Using localStorage');
             return localStorage;
         } catch {
+            console.log('📦 Using sessionStorage (fallback)');
             return sessionStorage;
         }
     }
 
-    // Khởi tạo từ storage
+    // Chuẩn hóa role: xóa "ROLE_" (nếu có) và chuyển thành chữ thường
+    _normalizeRole(role) {
+        if (!role) return 'user';
+        if (role.startsWith('ROLE_')) {
+            role = role.substring(5);
+        }
+        return role.toLowerCase(); // chuẩn hóa thành chữ thường
+    }
+
     _init() {
         const token = this.storage.getItem('token');
         const username = this.storage.getItem('username');
         const email = this.storage.getItem('email');
         const points = this.storage.getItem('points');
-        const role = this.storage.getItem('role');
+        let role = this.storage.getItem('role');
+
+        console.log('📚 _init: token=', token ? 'exists' : 'null', 'username=', username);
 
         if (token && username) {
+            role = this._normalizeRole(role);
             this._user = {
                 username,
                 email: email || null,
@@ -37,21 +50,22 @@ class AuthService {
                 role: role || 'user',
                 token
             };
+            console.log('✅ User restored from storage:', this._user);
+        } else {
+            console.log('❌ No valid user in storage');
         }
     }
 
-    // Lấy user hiện tại
     getCurrentUser() {
         return this._user ? { ...this._user } : null;
     }
 
-    // Kiểm tra đã đăng nhập chưa
     isAuthenticated() {
         return !!this._user;
     }
 
-    // Đăng nhập
     async login(username, password) {
+        console.log('🔑 login called with username:', username);
         try {
             const response = await fetch(`${API_BASE}/auth/login`, {
                 method: 'POST',
@@ -64,6 +78,7 @@ class AuthService {
                 throw new Error(data.message || 'Đăng nhập thất bại');
             }
 
+            console.log('✅ Login success, data:', data);
             this._setUser({
                 token: data.token,
                 username: data.username,
@@ -89,7 +104,6 @@ class AuthService {
         }
     }
 
-    // Đăng ký
     async register(username, email, password) {
         const response = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
@@ -101,7 +115,6 @@ class AuthService {
         return data;
     }
 
-    // Đăng xuất
     logout() {
         this.storage.removeItem('token');
         this.storage.removeItem('username');
@@ -112,7 +125,6 @@ class AuthService {
         this._notify();
     }
 
-    // Cập nhật điểm (gọi sau khi làm quiz)
     updatePoints(newPoints) {
         if (this._user) {
             this._user.points = newPoints;
@@ -121,13 +133,6 @@ class AuthService {
         }
     }
 
-    // ===============================
-    // QUÊN MẬT KHẨU – OTP
-    // ===============================
-
-    /**
-     * Gửi yêu cầu quên mật khẩu (gửi OTP về email)
-     */
     async forgotPassword(email) {
         console.log('🔐 AuthService.forgotPassword called with email:', email);
         const response = await fetch(`${API_BASE}/auth/forgot-password`, {
@@ -141,9 +146,6 @@ class AuthService {
         return data;
     }
 
-    /**
-     * Xác thực OTP
-     */
     async verifyOtp(email, otp) {
         console.log('🔐 AuthService.verifyOtp called with email:', email, 'otp:', otp);
         const response = await fetch(`${API_BASE}/auth/verify-otp`, {
@@ -154,12 +156,9 @@ class AuthService {
         const data = await response.json();
         console.log('   Response:', data);
         if (!response.ok) throw new Error(data.message || 'Mã OTP không hợp lệ');
-        return data; // trả về { success: true, token: "..." }
+        return data;
     }
 
-    /**
-     * Đặt lại mật khẩu mới (không cần token)
-     */
     async resetPassword(email, newPassword) {
         console.log('🔐 AuthService.resetPassword called with email:', email);
         const response = await fetch(`${API_BASE}/auth/reset-password`, {
@@ -173,7 +172,6 @@ class AuthService {
         return data;
     }
 
-    // --- Observer methods ---
     subscribe(callback) {
         this._subscribers.push(callback);
         callback(this.getCurrentUser());
@@ -187,27 +185,28 @@ class AuthService {
         this._subscribers.forEach(cb => cb(user));
     }
 
-    // --- Private helpers ---
     _setUser(userData) {
         const { token, username, email, points, role } = userData;
+        const normalizedRole = this._normalizeRole(role);
+
         this.storage.setItem('token', token);
         this.storage.setItem('username', username);
         if (email) this.storage.setItem('email', email);
         if (points !== undefined) this.storage.setItem('points', points);
-        if (role) this.storage.setItem('role', role);
+        this.storage.setItem('role', normalizedRole);
 
         this._user = {
             token,
             username,
             email: email || null,
             points: points ? parseInt(points) : 0,
-            role: role || 'user'
+            role: normalizedRole
         };
+        console.log('📝 _setUser completed, user:', this._user);
         this._notify();
     }
 }
 
 export const authService = new AuthService();
 
-// Đặt service lên window để app-loader có thể truy cập (nếu cần)
 window.authService = authService;

@@ -25,7 +25,10 @@ import { authService } from './js/services/auth.service.js';
     // 3️⃣ Setup UI (không phụ thuộc main.js)
     // ==========================================
     document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM ready, setting up UI...");
         setupUserUI();
+        // Kiểm tra và chuyển hướng admin sau khi UI đã setup
+        redirectIfAdmin();
     });
 
 })();
@@ -42,6 +45,7 @@ function loadMainApp() {
     script.src = "./js/modules/main.js";
     script.defer = true;
     document.body.appendChild(script);
+    console.log("Main app script loaded");
 }
 
 // ==========================================
@@ -49,6 +53,7 @@ function loadMainApp() {
 // ==========================================
 function setupUserUI() {
     const user = authService.getCurrentUser();
+    console.log("setupUserUI - user:", user);
 
     const authButtons = document.getElementById("authButtons");
     const userMenu = document.getElementById("userMenu");
@@ -73,7 +78,10 @@ function setupUserUI() {
 
     // Nếu là admin, thêm nút Admin Panel
     if (user.role === "admin") {
+        console.log("Admin user detected, adding admin button");
         injectAdminButton();
+    } else {
+        console.log("User role:", user.role);
     }
 }
 
@@ -88,11 +96,27 @@ function injectAdminButton() {
     if (document.getElementById("adminPanelBtn")) return;
 
     const adminLink = document.createElement("a");
-    adminLink.href = "./admin.html";
+    adminLink.href = "./app-v2/admin.html"; // đường dẫn tới admin
     adminLink.id = "adminPanelBtn";
     adminLink.innerHTML = `
         <i class="fas fa-shield-alt"></i>
         Admin Panel
     `;
     dropdown.insertBefore(adminLink, dropdown.firstChild);
+    console.log("Admin button injected");
+}
+
+// ==========================================
+// KIỂM TRA VÀ CHUYỂN HƯỚNG ADMIN
+// ==========================================
+function redirectIfAdmin() {
+    const user = authService.getCurrentUser();
+    console.log("redirectIfAdmin - user:", user);
+    // Nếu là admin và không phải đang ở trang admin (app-v2) thì chuyển hướng
+    if (user && user.role === "admin" && !window.location.pathname.includes("app-v2")) {
+        console.log("Admin detected, redirecting to admin panel");
+        window.location.href = "./app-v2/admin.html";
+    } else {
+        console.log("Not redirecting. role:", user?.role, "path:", window.location.pathname);
+    }
 }

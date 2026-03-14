@@ -18,7 +18,9 @@ function getBasePath() {
 ================================= */
 function redirect(path) {
     const base = getBasePath();
-    window.location.href = base + path;
+    const fullUrl = base + path;
+    console.log('Redirecting to:', fullUrl);
+    window.location.href = fullUrl;
 }
 
 /* ===============================
@@ -85,10 +87,17 @@ export async function handleAuth(event) {
 
             // Kiểm tra role để chuyển hướng admin
             const user = authService.getCurrentUser();
+            console.log('User after login:', user);
+            console.log('User role:', user?.role);
+
             if (user?.role === 'admin') {
-                redirect("app-v2/admin.html");
+                console.log('Admin detected, redirecting...');
+                // Thử dùng window.location trực tiếp nếu cần
+                window.location.href = '/app-v2/admin.html';
+                // redirect("app-v2/admin.html");
+            } else {
+                console.log('Regular user, staying on main page');
             }
-            // Nếu là user thường, không cần redirect vì đang ở trang chính
         } else {
             // Đăng ký
             const confirmPassword = document.getElementById('confirmPassword').value;

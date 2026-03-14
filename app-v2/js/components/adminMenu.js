@@ -1,3 +1,5 @@
+// app-v2/js/components/adminMenu.js
+
 export function renderAdminMenu() {
 
     const dropdown = document.getElementById("dropdownMenu");
@@ -28,6 +30,10 @@ export function renderAdminMenu() {
 
         <a href="#" data-page="user">
             <i class="fas fa-users"></i> Quản lý User
+        </a>
+
+        <a href="#" data-page="report">
+            <i class="fas fa-flag"></i> Báo cáo lỗi
         </a>
 
         <hr/>

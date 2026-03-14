@@ -3106,13 +3106,90 @@ html {
     display: flex;
     align-items: center;
     gap: 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     padding-bottom: 10px;
+    color: white;
 }
 
 .ai-advice-content {
     line-height: 1.8;
     font-size: 1rem;
+    color: white;
+}
+
+.ai-advice-content strong {
+    color: #ffd700;
+    font-weight: 700;
+}
+
+.ai-advice-content em {
+    color: #f0e68c;
+    font-style: italic;
+}
+
+.ai-advice-content ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 10px 0;
+    color: white;
+}
+
+.ai-advice-content li {
+    margin-bottom: 5px;
+    line-height: 1.6;
+}
+
+.ai-advice-content p {
+    margin: 10px 0;
+    color: white;
+}
+
+/* AI Loading Spinner */
+.ai-loading {
+    text-align: center;
+    padding: 20px;
+}
+
+.ai-loading .spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border-left-color: white;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+.ai-loading p {
+    color: white;
+    font-weight: 500;
+    margin: 10px 0 0;
+    font-size: 1.1rem;
+    animation: pulse 1.5s ease infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Error box */
+.ai-advice-box.error {
+    background: #fff3cd;
+    border-left: 4px solid #f0ad4e;
+    color: #856404;
+}
+
+.ai-advice-box.error .error-message {
+    margin: 0;
+    font-weight: 500;
+    padding: 10px;
+    color: #856404;
 }
 
 @keyframes slideInUp {

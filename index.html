@@ -581,16 +581,6 @@
     <!-- App Loader (nằm cùng cấp với index.html) -->
     <script type="module" src="./app-loader.js"></script>
 
-    <!-- Kiểm tra và chuyển hướng admin nếu cần -->
-    <script type="module">
-        import { authService } from './js/services/auth.service.js';
-
-        // Đăng ký lắng nghe thay đổi auth state
-        authService.subscribe((user) => {
-            if (user && user.role === 'admin') {
-                window.location.href = './app-v2/admin.html';
-            }
-        });
-    </script>
+    <!-- Không còn script chuyển hướng admin ở đây nữa -->
 </body>
 </html>

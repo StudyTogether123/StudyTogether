@@ -361,41 +361,103 @@ async function handleSubmit(e) {
     }
 }
 
-// Hàm gọi AI Coach
-async function fetchAIAdvice(details) {
-    try {
-        const mistakes = details
-            .filter(item => !item.correct)
-            .map(item => ({
-                question: item.questionContent,
-                userAnswer: item.userAnswer,
-                correctAnswer: item.correctAnswer,
-                explanation: item.explanation,
-                explanationLink: item.explanationLink
-            }));
+/* ===============================
+   AI COACH FUNCTIONS
+================================= */
 
-        if (mistakes.length === 0) return;
-
-        const token = authService.getCurrentUser()?.token;
-        const response = await fetch(`${API_BASE}/ai/advice`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify({ mistakes })
-        });
-
-        if (!response.ok) {
-            console.warn('AI advice failed:', await response.text());
-            return;
+// Hiển thị loading khi chờ AI
+function showAILoading() {
+    let aiBox = document.getElementById('ai-advice-box');
+    if (!aiBox) {
+        aiBox = document.createElement('div');
+        aiBox.id = 'ai-advice-box';
+        aiBox.className = 'ai-advice-box';
+        const resultContainer = document.querySelector('.quiz-result-container');
+        if (resultContainer) {
+            resultContainer.insertAdjacentElement('afterend', aiBox);
+        } else {
+            document.getElementById('quizResult').appendChild(aiBox);
         }
-
-        const data = await response.json();
-        showAIAdvice(data.advice);
-    } catch (error) {
-        console.error('❌ Lỗi khi gọi AI coach:', error);
     }
+    aiBox.innerHTML = `
+        <div class="ai-loading">
+            <div class="spinner"></div>
+            <p>🧠 AI đang phân tích lỗi sai của bạn...</p>
+        </div>
+    `;
+}
+
+// Ẩn loading (xóa box)
+function hideAILoading() {
+    const aiBox = document.getElementById('ai-advice-box');
+    if (aiBox) aiBox.remove();
+}
+
+// Hiển thị lỗi
+function showAIError(message) {
+    let aiBox = document.getElementById('ai-advice-box');
+    if (!aiBox) {
+        aiBox = document.createElement('div');
+        aiBox.id = 'ai-advice-box';
+        aiBox.className = 'ai-advice-box error';
+        const resultContainer = document.querySelector('.quiz-result-container');
+        if (resultContainer) {
+            resultContainer.insertAdjacentElement('afterend', aiBox);
+        } else {
+            document.getElementById('quizResult').appendChild(aiBox);
+        }
+    }
+    aiBox.innerHTML = `<p class="error-message">⚠️ ${message}</p>`;
+}
+
+// Chuyển đổi markdown cơ bản sang HTML
+function markdownToHtml(text) {
+    if (!text) return '';
+    
+    // Escape HTML trước để tránh XSS
+    text = escapeHtml(text);
+    
+    // Tách thành các dòng
+    let lines = text.split('\n');
+    let inList = false;
+    let html = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        let trimmed = line.trim();
+        
+        // Xử lý in đậm và nghiêng trong dòng
+        line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        line = line.replace(/\*(?!\*)(.*?)\*(?!\*)/g, '<em>$1</em>');
+        
+        // Kiểm tra danh sách
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            let content = trimmed.substring(2).trim();
+            // Xử lý lại markdown trong content (đề phòng)
+            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                             .replace(/\*(?!\*)(.*?)\*(?!\*)/g, '<em>$1</em>');
+            if (!inList) {
+                html += '<ul>';
+                inList = true;
+            }
+            html += `<li>${content}</li>`;
+        } else {
+            if (inList) {
+                html += '</ul>';
+                inList = false;
+            }
+            if (line.trim() === '') {
+                html += '<br>';
+            } else {
+                html += `<p>${line}</p>`;
+            }
+        }
+    }
+    if (inList) {
+        html += '</ul>';
+    }
+    
+    return html;
 }
 
 // Hiển thị lời khuyên AI
@@ -414,9 +476,58 @@ function showAIAdvice(advice) {
     }
     aiBox.innerHTML = `
         <h4><i class="fas fa-robot"></i> Gợi ý ôn tập từ AI</h4>
-        <div class="ai-advice-content">${advice.replace(/\n/g, '<br>')}</div>
+        <div class="ai-advice-content">${markdownToHtml(advice)}</div>
     `;
 }
+
+// Gọi API AI Coach
+async function fetchAIAdvice(details) {
+    try {
+        const mistakes = details
+            .filter(item => !item.correct)
+            .map(item => ({
+                question: item.questionContent,
+                userAnswer: item.userAnswer,
+                correctAnswer: item.correctAnswer,
+                explanation: item.explanation,
+                explanationLink: item.explanationLink
+            }));
+
+        if (mistakes.length === 0) return;
+
+        showAILoading();
+
+        const token = authService.getCurrentUser()?.token;
+        const response = await fetch(`${API_BASE}/ai/advice`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({ mistakes })
+        });
+
+        if (!response.ok) {
+            hideAILoading();
+            const errorText = await response.text();
+            console.warn('AI advice failed:', errorText);
+            showAIError('Không thể kết nối đến AI. Vui lòng thử lại sau.');
+            return;
+        }
+
+        const data = await response.json();
+        hideAILoading();
+        showAIAdvice(data.advice);
+    } catch (error) {
+        console.error('❌ Lỗi khi gọi AI coach:', error);
+        hideAILoading();
+        showAIError('Đã xảy ra lỗi khi phân tích. Vui lòng thử lại.');
+    }
+}
+
+/* ===============================
+   RENDER HELPERS
+================================= */
 
 function buildResultHTML(result, percentage, pointsEarned) {
     let detailsHtml = '';
