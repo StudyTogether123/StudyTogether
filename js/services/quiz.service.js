@@ -18,7 +18,7 @@ class QuizService {
      * @param {number} quizId - ID của quiz
      * @param {Object} answers - Map { questionId: answer }
      * @param {number} timeSpent - Thời gian làm bài (giây)
-     * @returns {Promise<Object>} - Kết quả chi tiết từ server (bao gồm điểm, số câu, phần trăm, điểm nhận được, và chi tiết từng câu)
+     * @returns {Promise<Object>} - Kết quả chi tiết từ server
      */
     async submitQuiz(quizId, answers, timeSpent) {
         console.log('📝 QuizService.submitQuiz called with quizId:', quizId);
@@ -30,14 +30,20 @@ class QuizService {
             },
             body: JSON.stringify({ quizId, answers, timeSpent })
         });
+
+        // Kiểm tra response trước khi parse JSON
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Lỗi ${response.status}: Gửi quiz thất bại`);
+        }
+
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Gửi quiz thất bại');
-        return data; // Trả về QuizResultDetailDTO
+        return data;
     }
 
     /**
      * Lấy lịch sử quiz của người dùng hiện tại
-     * @returns {Promise<Array>} - Danh sách lịch sử quiz (QuizHistoryDTO)
+     * @returns {Promise<Array>} - Danh sách lịch sử quiz
      */
     async getQuizHistory() {
         console.log('📜 QuizService.getQuizHistory called');
@@ -48,8 +54,13 @@ class QuizService {
                 ...this._getAuthHeader()
             }
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Lỗi ${response.status}: Không thể lấy lịch sử`);
+        }
+
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Không thể lấy lịch sử');
         return data;
     }
 
@@ -63,14 +74,19 @@ class QuizService {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Lỗi ${response.status}: Không thể lấy bảng xếp hạng`);
+        }
+
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Không thể lấy bảng xếp hạng');
         return data;
     }
 
     /**
      * Lấy quiz hàng ngày (công khai, không kèm đáp án)
-     * @returns {Promise<Object>} - Quiz daily
+     * @returns {Promise<Object|null>} - Quiz daily hoặc null nếu không có
      */
     async getDailyQuiz() {
         console.log('📅 QuizService.getDailyQuiz called');
@@ -78,8 +94,20 @@ class QuizService {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
+
+        // Nếu response không thành công
+        if (!response.ok) {
+            // Trường hợp đặc biệt: 404 (không có quiz) -> trả về null
+            if (response.status === 404) {
+                console.log('⚠️ No daily quiz found (404)');
+                return null;
+            }
+            // Các lỗi khác: đọc body lỗi (nếu có) và ném exception
+            const errorText = await response.text();
+            throw new Error(errorText || `Lỗi ${response.status}: Không thể lấy quiz daily`);
+        }
+
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Không thể lấy quiz daily');
         return data;
     }
 
@@ -94,8 +122,13 @@ class QuizService {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Lỗi ${response.status}: Không thể lấy quiz`);
+        }
+
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Không thể lấy quiz');
         return data;
     }
 
@@ -113,8 +146,13 @@ class QuizService {
                 ...this._getAuthHeader()
             }
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Lỗi ${response.status}: Không thể kiểm tra quiz`);
+        }
+
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Không thể kiểm tra quiz');
         return data.completed; // backend trả về { completed: true/false }
     }
 
@@ -131,8 +169,13 @@ class QuizService {
                 ...this._getAuthHeader()
             }
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Lỗi ${response.status}: Không thể lấy thống kê`);
+        }
+
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Không thể lấy thống kê');
         return data;
     }
 }
